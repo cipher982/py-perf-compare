@@ -7,6 +7,7 @@ import sys
 import os
 import logging
 from datetime import datetime
+import importlib
 
 # Configure logging
 logging.basicConfig(
@@ -20,9 +21,16 @@ logging.basicConfig(
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Dynamically import test modules
 from src import cpu_test, memory_test, mixed_test
+import src.cython_cpu_test as cython_cpu_test
+import src.cython_memory_test as cython_memory_test
+import src.cython_mixed_test as cython_mixed_test
+import src.pypy_cpu_test as pypy_cpu_test
+import src.pypy_memory_test as pypy_memory_test
+import src.pypy_mixed_test as pypy_mixed_test
 
-def measure_performance(func, *args, num_runs=100):
+def measure_performance(func, *args, num_runs=30):
     """Measure performance metrics for a given function."""
     logging.info(f"Starting performance measurement for {func.__module__}.{func.__name__}")
     logging.info(f"Arguments: {args}")
@@ -43,26 +51,38 @@ def measure_performance(func, *args, num_runs=100):
         logging.debug(f"Run time: {run_time:.4f} seconds")
         
         # Memory measurement
-        mem_usage = memory_profiler.memory_usage((func, args), max_iterations=1)[0]
-        memory_usages.append(mem_usage)
-        
-        logging.debug(f"Memory usage: {mem_usage:.2f} MB")
+        try:
+            mem_usage = memory_profiler.memory_usage((func, args), max_iterations=1)[0]
+            memory_usages.append(mem_usage)
+            logging.debug(f"Memory usage: {mem_usage:.2f} MB")
+        except Exception as e:
+            logging.warning(f"Memory profiling failed: {e}")
+            memory_usages.append(0)
     
     return {
         'mean_time': statistics.mean(times),
-        'std_time': statistics.stdev(times),
+        'std_time': statistics.stdev(times) if len(times) > 1 else 0,
         'mean_memory': statistics.mean(memory_usages),
-        'std_memory': statistics.stdev(memory_usages)
+        'std_memory': statistics.stdev(memory_usages) if len(memory_usages) > 1 else 0
     }
 
 def run_benchmarks():
-    """Run performance benchmarks for all test cases."""
+    """Run performance benchmarks for all test cases and implementations."""
     logging.info("Starting performance benchmarks")
     
+    # Define test configurations
     benchmarks = {
-        'CPU Test (Primes)': (cpu_test.run_cpu_test, 5000),  # Reduced from 10000
-        'Memory Test (Matrix)': (memory_test.run_memory_test, 250),  # Reduced from 500
-        'Mixed Test (Fibonacci)': (mixed_test.run_mixed_test, 30)
+        'CPU Test (Python)': (cpu_test.run_cpu_test, 3000),
+        'CPU Test (Cython)': (cython_cpu_test.run_cpu_test, 3000),
+        'CPU Test (PyPy)': (pypy_cpu_test.run_cpu_test, 3000),
+        
+        'Memory Test (Python)': (memory_test.run_memory_test, 200),
+        'Memory Test (Cython)': (cython_memory_test.run_memory_test, 200),
+        'Memory Test (PyPy)': (pypy_memory_test.run_memory_test, 200),
+        
+        'Mixed Test (Python)': (mixed_test.run_mixed_test, 25),
+        'Mixed Test (Cython)': (cython_mixed_test.run_mixed_test, 25),
+        'Mixed Test (PyPy)': (pypy_mixed_test.run_mixed_test, 25)
     }
     
     results = {}
@@ -79,24 +99,28 @@ def plot_results(results):
     # Create results directory if it doesn't exist
     os.makedirs('results', exist_ok=True)
     
-    plt.figure(figsize=(15, 5))
+    plt.figure(figsize=(16, 6))
     
     # Time performance
     plt.subplot(1, 2, 1)
     names = list(results.keys())
     mean_times = [result['mean_time'] for result in results.values()]
-    plt.bar(names, mean_times)
-    plt.title('Mean Execution Time')
+    std_times = [result['std_time'] for result in results.values()]
+    
+    plt.bar(names, mean_times, yerr=std_times, capsize=5)
+    plt.title('Mean Execution Time with Standard Deviation')
     plt.ylabel('Time (seconds)')
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=45, ha='right')
     
     # Memory performance
     plt.subplot(1, 2, 2)
     mean_memories = [result['mean_memory'] for result in results.values()]
-    plt.bar(names, mean_memories)
-    plt.title('Mean Memory Usage')
+    std_memories = [result['std_memory'] for result in results.values()]
+    
+    plt.bar(names, mean_memories, yerr=std_memories, capsize=5)
+    plt.title('Mean Memory Usage with Standard Deviation')
     plt.ylabel('Memory (MB)')
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=45, ha='right')
     
     plt.tight_layout()
     graph_filename = f'results/performance_comparison_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
