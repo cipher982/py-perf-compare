@@ -64,10 +64,12 @@ def run_benchmark(implementation):
         )
         
         # Real-time logging of stdout and stderr
-        for line in process.stdout:
-            logging.info(f"{implementation.upper()} STDOUT: {line.strip()}")
-        for line in process.stderr:
-            logging.warning(f"{implementation.upper()} STDERR: {line.strip()}")
+        if process.stdout:
+            for line in process.stdout:
+                logging.info(f"{implementation.upper()} STDOUT: {line.strip()}")
+        if process.stderr:
+            for line in process.stderr:
+                logging.warning(f"{implementation.upper()} STDERR: {line.strip()}")
         
         # Wait for process to complete
         process.wait()
