@@ -17,6 +17,7 @@ dependencies = [
     "matplotlib>=3.7.1",
     "nuitka>=1.7.10",
     "pandas>=2.2.3",
+    "seaborn>=0.13.2",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +31,26 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["I", "E", "F", "Q000"]
+ignore = []
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+inline-quotes = "double"
+multiline-quotes = "double"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
 [tool.cython-compiler]
 include-path = ["src"]
 
@@ -40,11 +61,3 @@ python_files = ["test_*.py"]
 [tool.mypy]
 ignore_missing_imports = true
 check_untyped_defs = true
-
-[tool.black]
-line-length = 88
-target-version = ['py38']
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3

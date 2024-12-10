@@ -1,7 +1,10 @@
 # Python Performance Comparison Guide
 
 ## Overview
-This project provides a comprehensive performance comparison of different Python implementations across various computational tasks.
+This project provides a comprehensive performance comparison of different Python implementations across various computational tasks, including:
+- Pure Python (CPython)
+- Cython-optimized
+- PyPy-compatible implementations
 
 ## Project Structure
 ```
@@ -37,55 +40,70 @@ python-tests/
 - PyPy-compatible
 
 ## Prerequisites
-- Python 3.8+
-- UV package manager (recommended)
+- Python 3.8+ (recommended 3.11+)
+- UV package manager
 - Cython
 - NumPy
-- PyPy (optional, for PyPy performance testing)
+- PyPy (optional)
 
 ## Setup and Installation
 
-### Using UV (Recommended)
-1. Install UV package manager
+### 1. Install UV Package Manager
 ```bash
 pip install uv
 ```
 
-2. Install project dependencies
+### 2. Create Virtual Environment
 ```bash
-uv pip install -e . --compile
+# Create a new virtual environment
+python3 -m venv .venv
+
+# Activate the virtual environment
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate     # Windows
 ```
 
-### Manual Setup
-1. Install dependencies
+### 3. Install Project Dependencies
 ```bash
-pip install numpy cython memory-profiler psutil matplotlib
+# Install dependencies with UV
+uv pip install -e . --system
 ```
 
-2. Compile Cython extensions
+### 4. Install PyPy (Optional)
+#### macOS (Homebrew)
 ```bash
+brew install pypy3
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install pypy3
+```
+
+### 5. Compile Cython Extensions
+```bash
+# Compile Cython extensions
 python setup.py build_ext --inplace
 ```
 
 ## Running Performance Tests
 
 ### Comprehensive Benchmark
-To run benchmarks for all available implementations:
 ```bash
 python run_benchmarks.py
 ```
 
 ### Specific Implementation Benchmarks
-Run benchmarks for specific Python implementations:
 ```bash
 # Run CPython and PyPy benchmarks
 python run_benchmarks.py cpython pypy
 
-# Run only PyPy benchmarks
-python run_benchmarks.py pypy
+# Run only Cython benchmarks
+python run_benchmarks.py cython
 ```
 
-### Available Implementations
+## Available Implementations
 - `cpython`: Standard Python implementation
 - `cython`: Cython-optimized tests
 - `pypy`: PyPy JIT-compiled implementation
@@ -98,13 +116,38 @@ python run_benchmarks.py pypy
 ## Performance Metrics
 - Execution time
 - Memory usage
-- Comparative analysis across different implementations
+- Comparative analysis across implementations
 
 ## Troubleshooting
-- Ensure all dependencies are correctly installed
-- Check Python and NumPy versions compatibility
-- Verify Cython extension compilation
-- For PyPy testing, ensure PyPy is installed and accessible
+
+### Cython Compilation Errors
+- Ensure C compiler is installed (gcc, clang)
+- Install Python development headers:
+  ```bash
+  # macOS
+  brew install python-dev
+
+  # Ubuntu/Debian
+  sudo apt-get install python3-dev
+  ```
+
+### PyPy Compatibility
+- Some libraries may not be fully compatible with PyPy
+- Test and verify library support before benchmarking
+
+### Performance Variations
+Results may vary based on:
+- Hardware specifications
+- Python version
+- Cython version
+- System load
 
 ## Contributing
-Contributions, issues, and feature requests are welcome!
+1. Fork the repository
+2. Create a feature branch
+3. Implement your changes
+4. Run tests and benchmarks
+5. Submit a pull request
+
+## License
+[Insert License Information]
