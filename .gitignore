@@ -1,0 +1,60 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cython compilation artifacts
+*.c
+*.cpp
+*.so
+*.dll
+*.dylib
+
+# Build and distribution directories
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env/
+.venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Performance results and logs
+results/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Compiled Python files
+*.pyc
+
+# Nuitka compilation
+*.build/
+*.dist/
+
+# Memory profiler and other temporary files
+*.prof
+*.lprof
+*.tmp
+
+# Pytest
+.pytest_cache/
+
+# Coverage reports
+.coverage
+htmlcov/
