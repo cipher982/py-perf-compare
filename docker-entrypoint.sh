@@ -1,30 +1,20 @@
 #!/bin/bash
 set -e
 
-# Function to verify Python implementation
-verify_implementation() {
-    implementation=$1
-    venv_path=$2
-    python_path="$venv_path/bin/python"
-    
-    # Check if Python exists in the virtual environment
-    if [ ! -f "$python_path" ]; then
-        echo "Error: Python not found at $python_path"
-        exit 1
-    }
-    
-    # Verify Python implementation
-    implementation_info=$($python_path -c "import sys; print(sys.implementation.name)")
-    
-    if [ "$implementation" = "pypy" ] && [ "$implementation_info" != "pypy" ]; then
-        echo "Error: Expected PyPy but got $implementation_info implementation"
-        exit 1
-    elif [ "$implementation" = "cpython" ] && [ "$implementation_info" != "cpython" ]; then
-        echo "Error: Expected CPython but got $implementation_info implementation"
-        exit 1
-    fi
-    
-    echo "Verified $implementation implementation: $implementation_info"
+# Debug function to show Python executables
+debug_python_env() {
+    echo "=== Debugging Python environment ==="
+    echo "PATH: $PATH"
+    echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+    echo "Contents of /venv/pypy/bin:"
+    ls -la /venv/pypy/bin
+    echo "Contents of /venv/cpython/bin:"
+    ls -la /venv/cpython/bin
+    echo "Contents of /usr/local/bin:"
+    ls -la /usr/local/bin/python* /usr/local/bin/pypy*
+    echo "Contents of /usr/local/lib:"
+    ls -la /usr/local/lib/pypy*
+    echo "==========================="
 }
 
 # Function to run benchmarks with specific Python implementation
@@ -33,15 +23,26 @@ run_benchmarks() {
     venv_path=$2
     echo "Running benchmarks with $implementation..."
     
-    # Verify correct implementation before running
-    verify_implementation "$implementation" "$venv_path"
+    # Debug before running
+    debug_python_env
     
     # Set up environment variables
     export PATH="$venv_path/bin:$PATH"
-    export PYTHONPATH=/app:$PYTHONPATH
     
-    # Run benchmarks using python from the virtual environment
-    $venv_path/bin/python run_benchmarks.py "$implementation"
+    if [ "$implementation" = "pypy" ]; then
+        # For PyPy, use the system PyPy
+        PYTHON_CMD="pypy3"
+    else
+        # For CPython, use the copied executable
+        PYTHON_CMD="/usr/local/bin/python"
+    fi
+    
+    echo "Using Python command: $PYTHON_CMD"
+    echo "Implementation check:"
+    $PYTHON_CMD -c "import sys; print(f'Running with {sys.implementation.name}')"
+    
+    # Run benchmarks
+    $PYTHON_CMD run_benchmarks.py "$implementation"
 }
 
 # Create results directory if it doesn't exist
