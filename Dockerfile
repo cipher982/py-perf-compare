@@ -75,9 +75,9 @@ RUN echo "=== Final image: CPython venv contents ===" && \
     echo "=== Final image: PyPy venv contents ===" && \
     ls -la /venv/pypy/bin && \
     echo "=== Final image: System executables ===" && \
-    ls -la /usr/local/bin/python* /usr/local/bin/pypy* && \
+    ls -la /usr/local/bin/python* /usr/local/bin/pypy* 2>/dev/null || true && \
     echo "=== Final image: PyPy libraries ===" && \
-    ls -la /usr/local/lib/pypy*
+    ls -la /usr/local/lib/pypy* 2>/dev/null || true
 
 # Set up environment variables
 ENV PATH="/venv/pypy/bin:/venv/cpython/bin:/usr/local/bin:$PATH" \
