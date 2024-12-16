@@ -13,11 +13,17 @@ def calculate_primes(limit):
     return [num for num in range(2, limit + 1) if is_prime(num)]
 
 
-def run_cpu_test(limit=10000):
-    """Run CPU-bound test to calculate primes."""
-    return calculate_primes(limit)
+def run_cpu_test(n):
+    """
+    Pure Python implementation for CPU test.
+    No numpy dependency required.
+    """
+    result = 0
+    for i in range(n):
+        result += i * i
+    return result
 
 
 if __name__ == "__main__":
-    primes = run_cpu_test()
-    print(f"Found {len(primes)} prime numbers.")
+    result = run_cpu_test(10000)
+    print(f"Result: {result}")

@@ -1,0 +1,6 @@
+numpy<1.25.0  # PyPy compatible version
+memory-profiler>=0.61.0
+psutil>=5.9.5
+matplotlib<3.8.0  # Older version for better compatibility
+pandas<2.0.0  # Version compatible with older numpy
+seaborn<0.13.0  # Version compatible with older matplotlib

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import os
 import shutil
 import subprocess
 import sys
@@ -42,6 +43,17 @@ def run_benchmark(implementation):
     logging.info(f"Running benchmarks with {implementation.capitalize()} implementation...")
     logging.info(f"Using executable: {executable}")
 
+    # Set up environment variables for PyPy
+    env = os.environ.copy()
+    if implementation == "pypy":
+        venv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv-pypy")
+        if sys.platform == "win32":
+            env["PATH"] = os.path.join(venv_path, "Scripts") + os.pathsep + env["PATH"]
+            env["PYTHONPATH"] = os.path.dirname(os.path.abspath(__file__))
+        else:
+            env["PATH"] = os.path.join(venv_path, "bin") + os.pathsep + env["PATH"]
+            env["PYTHONPATH"] = os.path.dirname(os.path.abspath(__file__))
+
     # Ensure Cython extensions are built for CPython
     if implementation in ["cpython", "cython"]:
         try:
@@ -50,41 +62,24 @@ def run_benchmark(implementation):
                 ["python3", "setup.py", "build_ext", "--inplace"],
                 check=True,
                 capture_output=True,
+                text=True,
             )
         except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to build Cython extensions: {e.stderr.decode()}")
+            logging.error(f"Failed to build Cython extensions: {e.stderr}")
             return False
 
     try:
-        # Run performance runner with real-time logging
-        process = subprocess.Popen(
-            [executable, "benchmarks/performance_runner.py"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,  # Line buffered
-            universal_newlines=True,
+        result = subprocess.run(
+            [executable, "benchmarks/performance_runner.py"], check=True, capture_output=True, text=True, env=env
         )
-
-        # Real-time logging of stdout and stderr
-        if process.stdout:
-            for line in process.stdout:
-                logging.info(f"{implementation.upper()} STDOUT: {line.strip()}")
-        if process.stderr:
-            for line in process.stderr:
-                logging.warning(f"{implementation.upper()} STDERR: {line.strip()}")
-
-        # Wait for process to complete
-        process.wait()
-
-        if process.returncode != 0:
-            logging.error(f"{implementation.capitalize()} benchmarks failed with return code {process.returncode}")
-            return False
-
+        for line in result.stdout.splitlines():
+            logging.info(f"{implementation.upper()} STDOUT: {line}")
         return True
-
-    except Exception as e:
-        logging.error(f"Error running {implementation} benchmarks: {e}")
+    except subprocess.CalledProcessError as e:
+        if e.stderr:
+            for line in e.stderr.splitlines():
+                logging.warning(f"{implementation.upper()} STDERR: {line}")
+        logging.error(f"{implementation.capitalize()} benchmarks failed with return code {e.returncode}")
         return False
 
 

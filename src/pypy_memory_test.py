@@ -26,13 +26,26 @@ def generate_matrix(rows, cols):
     return [[random.uniform(0, 1) for _ in range(cols)] for _ in range(rows)]
 
 
-def run_memory_test(matrix_size=500):
-    """Run memory-bound test with matrix multiplication."""
-    A = generate_matrix(matrix_size, matrix_size)
-    B = generate_matrix(matrix_size, matrix_size)
-    return matrix_multiply(A, B)
+def run_memory_test(n):
+    """
+    Pure Python implementation for memory test.
+    No numpy dependency required.
+    """
+    # Create a list of lists to consume memory
+    matrix = []
+    for i in range(n):
+        row = [j * j for j in range(n)]
+        matrix.append(row)
+
+    # Do some operations
+    result = 0
+    for i in range(n):
+        for j in range(n):
+            result += matrix[i][j]
+
+    return result
 
 
 if __name__ == "__main__":
-    result = run_memory_test()
-    print(f"Matrix multiplication completed. Result matrix size: {len(result)}x{len(result[0])}")
+    result = run_memory_test(500)
+    print(f"Memory test completed. Result: {result}")

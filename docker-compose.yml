@@ -1,0 +1,7 @@
+services:
+  benchmarks:
+    build: .
+    volumes:
+      - ./results:/results
+    environment:
+      - PYTHONPATH=/app

@@ -87,6 +87,53 @@ sudo apt-get install pypy3
 python setup.py build_ext --inplace
 ```
 
+## Running with Docker (Recommended)
+
+The easiest way to run the benchmarks is using Docker, which ensures consistent environments across different Python implementations.
+
+1. Build and run with Docker Compose:
+```bash
+docker-compose up --build
+```
+
+This will:
+- Create separate environments for CPython and PyPy
+- Run all benchmarks
+- Save results to the `./results` directory
+
+## Manual Setup (Alternative)
+
+If you prefer not to use Docker, you can set up the environments manually:
+
+### 1. CPython/Cython Setup
+```bash
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -e .
+```
+
+### 2. PyPy Setup
+```bash
+# Create PyPy virtual environment
+pypy3 -m venv .venv-pypy
+
+# Activate PyPy environment
+source .venv-pypy/bin/activate  # On Windows: .venv-pypy\Scripts\activate
+
+# Install PyPy-specific dependencies
+pip install -r requirements-pypy.txt
+pip install -e .
+```
+
+### Running Benchmarks
+```bash
+# Make sure you're in the project root
+python run_benchmarks.py
+```
+
 ## Running Performance Tests
 
 ### Comprehensive Benchmark

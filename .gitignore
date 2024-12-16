@@ -58,3 +58,5 @@ Thumbs.db
 # Coverage reports
 .coverage
 htmlcov/
+
+.venv-pypy/
