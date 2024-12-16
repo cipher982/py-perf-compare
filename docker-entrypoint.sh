@@ -7,15 +7,20 @@ run_benchmarks() {
     venv_path=$2
     echo "Running benchmarks with $implementation..."
     
-    # Activate virtual environment
-    source $venv_path/bin/activate
+    # Set up environment variables
+    export PATH="$venv_path/bin:$PATH"
+    export PYTHONPATH=/app
     
     # Run benchmarks
-    python run_benchmarks.py "$implementation"
-    
-    # Deactivate virtual environment
-    deactivate
+    if [ "$implementation" = "pypy" ]; then
+        pypy3 run_benchmarks.py "$implementation"
+    else
+        python run_benchmarks.py "$implementation"
+    fi
 }
+
+# Create results directory if it doesn't exist
+mkdir -p /app/results
 
 # Run benchmarks for each implementation
 run_benchmarks "cpython" "/venv/cpython"
@@ -23,5 +28,5 @@ run_benchmarks "pypy" "/venv/pypy"
 
 # Copy results to mounted volume if it exists
 if [ -d "/results" ]; then
-    cp -r results/* /results/
+    cp -r /app/results/* /results/
 fi

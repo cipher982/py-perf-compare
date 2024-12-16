@@ -59,11 +59,17 @@ RUN apt-get update && \
     gcc \
     g++ \
     curl \
+    pypy3 \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy virtual environments and code
 COPY --from=cpython-base /venv/cpython /venv/cpython
 COPY --from=cpython-base /app /app
 COPY --from=pypy-base /venv/pypy /venv/pypy
+
+# Set up environment variables
+ENV PATH="/venv/pypy/bin:/venv/cpython/bin:$PATH" \
+    PYTHONPATH=/app
 
 # Copy the entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
