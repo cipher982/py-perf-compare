@@ -20,8 +20,10 @@ RUN python -m venv /venv/cpython && \
 # Copy the rest of the code
 COPY . .
 
-# Install the project (this will be quick if only source code changed)
-RUN . /venv/cpython/bin/activate && pip install -e .
+# Install the project and verify CPython
+RUN . /venv/cpython/bin/activate && \
+    pip install -e . && \
+    python -c "import sys; assert sys.implementation.name == 'cpython', f'Wrong implementation: {sys.implementation.name}'"
 
 FROM pypy:3.10-slim AS pypy-base
 WORKDIR /app
@@ -44,10 +46,11 @@ RUN pypy3 -m venv /venv/pypy && \
 # Copy the rest of the code
 COPY . .
 
-# Install the project and additional dependencies
+# Install the project and verify PyPy
 RUN . /venv/pypy/bin/activate && \
-    pip install psutil && \
-    pip install -e .
+    pip install psutil memory-profiler matplotlib pandas seaborn && \
+    pip install -e . && \
+    python -c "import sys; assert sys.implementation.name == 'pypy', f'Wrong implementation: {sys.implementation.name}'"
 
 # Final image combining both environments
 FROM python:3.11-slim AS final-image
@@ -66,6 +69,10 @@ RUN apt-get update && \
 COPY --from=cpython-base /venv/cpython /venv/cpython
 COPY --from=cpython-base /app /app
 COPY --from=pypy-base /venv/pypy /venv/pypy
+
+# Verify both implementations in final image
+RUN /venv/cpython/bin/python -c "import sys; assert sys.implementation.name == 'cpython'" && \
+    /venv/pypy/bin/python -c "import sys; assert sys.implementation.name == 'pypy'"
 
 # Set up environment variables
 ENV PATH="/venv/pypy/bin:/venv/cpython/bin:$PATH" \
