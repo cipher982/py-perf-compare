@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # Debug function to show Python executables
 debug_python_env() {
@@ -11,9 +10,9 @@ debug_python_env() {
     echo "Contents of /venv/cpython/bin:"
     ls -la /venv/cpython/bin
     echo "Contents of /usr/local/bin:"
-    ls -la /usr/local/bin/python* /usr/local/bin/pypy*
+    ls -la /usr/local/bin/python* /usr/local/bin/pypy* 2>/dev/null || true
     echo "Contents of /usr/local/lib:"
-    ls -la /usr/local/lib/pypy*
+    ls -la /usr/local/lib/pypy* 2>/dev/null || true
     echo "==========================="
 }
 
@@ -41,12 +40,16 @@ run_benchmarks() {
     echo "Implementation check:"
     $PYTHON_CMD -c "import sys; print(f'Running with {sys.implementation.name}')"
     
-    # Run benchmarks
-    $PYTHON_CMD run_benchmarks.py "$implementation"
+    # Run benchmarks with error handling
+    if ! $PYTHON_CMD run_benchmarks.py "$implementation"; then
+        echo "Error: Benchmarks for $implementation failed"
+    fi
 }
 
 # Create results directory if it doesn't exist
-mkdir -p /app/results
+if ! mkdir -p /app/results; then
+    echo "Error: Failed to create results directory"
+fi
 
 # Run benchmarks for each implementation
 run_benchmarks "cpython" "/venv/cpython"
@@ -54,5 +57,7 @@ run_benchmarks "pypy" "/venv/pypy"
 
 # Copy results to mounted volume if it exists
 if [ -d "/results" ]; then
-    cp -r /app/results/* /results/
+    if ! cp -r /app/results/* /results/; then
+        echo "Error: Failed to copy results"
+    fi
 fi

@@ -15,13 +15,11 @@ RUN apt-get update && \
 # Install dependencies first (this layer will be cached if dependencies don't change)
 RUN python -m venv /venv/cpython && \
     . /venv/cpython/bin/activate && \
-    pip install --upgrade pip wheel setuptools
+    pip install --upgrade pip wheel setuptools && \
+    pip install -e .
 
-# Copy the rest of the code
+# Now copy the rest of the code
 COPY . .
-
-# Install the project
-RUN . /venv/cpython/bin/activate && pip install -e .
 
 FROM pypy:3.10-slim AS pypy-base
 WORKDIR /app
@@ -39,15 +37,12 @@ RUN apt-get update && \
 # Create PyPy virtual environment
 RUN pypy3 -m venv /venv/pypy && \
     . /venv/pypy/bin/activate && \
-    pip install --upgrade pip wheel setuptools
-
-# Copy the rest of the code
-COPY . .
-
-# Install the project and dependencies
-RUN . /venv/pypy/bin/activate && \
+    pip install --upgrade pip wheel setuptools && \
     pip install psutil memory-profiler matplotlib pandas seaborn && \
     pip install -e .
+
+# Now copy the rest of the code
+COPY . .
 
 # Final image combining both environments
 FROM pypy:3.10-slim AS final-image
