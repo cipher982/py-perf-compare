@@ -5,6 +5,9 @@ WORKDIR /app
 # Copy only dependency files first
 COPY pyproject.toml setup.py ./
 
+# Copy Cython source files needed for build
+COPY src/cython_*.pyx src/
+
 # Install build dependencies for CPython
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -26,6 +29,9 @@ WORKDIR /app
 
 # Copy only dependency files first
 COPY pyproject.toml setup.py ./
+
+# Copy Cython source files needed for build
+COPY src/cython_*.pyx src/
 
 # Install build essentials for PyPy
 RUN apt-get update && \
