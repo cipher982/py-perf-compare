@@ -5,9 +5,6 @@ WORKDIR /app
 # Copy only dependency files first
 COPY pyproject.toml setup.py ./
 
-# Copy Cython source files needed for build
-COPY src/cython_*.pyx src/
-
 # Install build dependencies for CPython
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -15,14 +12,15 @@ RUN apt-get update && \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies first (this layer will be cached if dependencies don't change)
+# Copy source files needed for Cython compilation
+COPY src/ src/
+
+# Install dependencies and build Cython modules
 RUN python -m venv /venv/cpython && \
     . /venv/cpython/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install -e .
-
-# Now copy the rest of the code
-COPY . .
+    pip install -e . && \
+    python setup.py build_ext --inplace
 
 FROM pypy:3.10-slim AS pypy-base
 WORKDIR /app
@@ -30,8 +28,8 @@ WORKDIR /app
 # Copy only dependency files first
 COPY pyproject.toml setup.py ./
 
-# Copy Cython source files needed for build
-COPY src/cython_*.pyx src/
+# Copy source files needed for Cython compilation
+COPY src/ src/
 
 # Install build essentials for PyPy
 RUN apt-get update && \
@@ -40,15 +38,13 @@ RUN apt-get update && \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Create PyPy virtual environment
+# Create PyPy virtual environment and build Cython modules
 RUN pypy3 -m venv /venv/pypy && \
     . /venv/pypy/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
     pip install psutil memory-profiler matplotlib pandas seaborn && \
-    pip install -e .
-
-# Now copy the rest of the code
-COPY . .
+    pip install -e . && \
+    python setup.py build_ext --inplace
 
 # Final image combining both environments
 FROM pypy:3.10-slim AS final-image
@@ -61,31 +57,28 @@ RUN apt-get update && \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environments and code
+# Copy Python environments and binaries
 COPY --from=cpython-base /venv/cpython /venv/cpython
 COPY --from=cpython-base /app /app
 COPY --from=cpython-base /usr/local/bin/python /usr/local/bin/python3.11
+COPY --from=cpython-base /usr/local/lib/libpython3.11.so* /usr/local/lib/
 RUN ln -s /usr/local/bin/python3.11 /usr/local/bin/python
 
-# Copy PyPy virtual environment
+# Copy PyPy environment
 COPY --from=pypy-base /venv/pypy /venv/pypy
 
 # Debug virtual environment contents
 RUN echo "=== Final image: CPython venv contents ===" && \
     ls -la /venv/cpython/bin && \
     echo "=== Final image: PyPy venv contents ===" && \
-    ls -la /venv/pypy/bin && \
-    echo "=== Final image: System executables ===" && \
-    ls -la /usr/local/bin/python* /usr/local/bin/pypy* 2>/dev/null || true && \
-    echo "=== Final image: PyPy libraries ===" && \
-    ls -la /usr/local/lib/pypy* 2>/dev/null || true
+    ls -la /venv/pypy/bin
 
 # Set up environment variables
 ENV PATH="/venv/pypy/bin:/venv/cpython/bin:/usr/local/bin:$PATH" \
     PYTHONPATH=/app \
     LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 
-# Copy the entrypoint script
+# Set up entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
