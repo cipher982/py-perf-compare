@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Install dependencies in both environments if not already installed
+setup_environment() {
+    echo "Setting up $1 environment..."
+    source $2/bin/activate
+    pip install -e .
+    python setup.py build_ext --inplace
+    deactivate
+}
+
 # Debug function to show Python executables
 debug_python_env() {
     echo "=== Debugging Python environment ==="
@@ -46,18 +55,16 @@ run_benchmarks() {
     fi
 }
 
+# Set up environments if needed
+setup_environment "CPython" "/venv/cpython"
+setup_environment "PyPy" "/venv/pypy"
+
 # Create results directory if it doesn't exist
-if ! mkdir -p /app/results; then
-    echo "Error: Failed to create results directory"
-fi
+mkdir -p /app/results
 
 # Run benchmarks for each implementation
 run_benchmarks "cpython" "/venv/cpython"
 run_benchmarks "pypy" "/venv/pypy"
 
-# Copy results to mounted volume if it exists
-if [ -d "/results" ]; then
-    if ! cp -r /app/results/* /results/; then
-        echo "Error: Failed to copy results"
-    fi
-fi
+# Copy results to mounted volume
+cp /app/results/* /results/ || echo "Error: Failed to copy results"
