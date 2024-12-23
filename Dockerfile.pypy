@@ -1,0 +1,25 @@
+# PyPy benchmark environment
+FROM pypy:3.10-slim
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN pypy3 -m venv /venv
+
+# Activate virtual environment and install dependencies
+RUN . /venv/bin/activate && \
+    pip install --upgrade pip wheel setuptools && \
+    pip install -e . && \
+    python setup.py build_ext --inplace
+
+# Set up entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh", "pypy"]

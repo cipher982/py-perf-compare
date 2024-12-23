@@ -1,14 +1,22 @@
 services:
-  benchmarks:
-    build: .
+  cpython:
+    build: 
+      context: .
+      dockerfile: Dockerfile.cpython
     volumes:
       - .:/app
-      - ./results:/results
-      # Don't sync virtual environments back to host
-      - /app/venv
-      - /app/__pycache__
-      - /app/**/__pycache__
+      - ./results/cpython:/results
     environment:
       - PYTHONPATH=/app
-      # Disable Python bytecode generation for faster startup
+      - PYTHONDONTWRITEBYTECODE=1
+
+  pypy:
+    build: 
+      context: .
+      dockerfile: Dockerfile.pypy
+    volumes:
+      - .:/app
+      - ./results/pypy:/results
+    environment:
+      - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
