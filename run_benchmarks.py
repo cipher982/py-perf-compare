@@ -32,7 +32,7 @@ def find_executable(name):
     return None
 
 
-def run_benchmark(implementation):
+def run_benchmark(implementation, runs=30, cpu_limit=10000, memory_size=1000, mixed_size=1000, verbose=False):
     """Run benchmarks for a specific Python implementation."""
     executable = find_executable(implementation)
 
@@ -43,78 +43,116 @@ def run_benchmark(implementation):
     logging.info(f"Running benchmarks with {implementation.capitalize()} implementation...")
     logging.info(f"Using executable: {executable}")
 
-    # Set up environment variables for PyPy
-    env = os.environ.copy()
-    if implementation == "pypy":
-        venv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv-pypy")
-        if sys.platform == "win32":
-            env["PATH"] = os.path.join(venv_path, "Scripts") + os.pathsep + env["PATH"]
-            env["PYTHONPATH"] = os.path.dirname(os.path.abspath(__file__))
-        else:
-            env["PATH"] = os.path.join(venv_path, "bin") + os.pathsep + env["PATH"]
-            env["PYTHONPATH"] = os.path.dirname(os.path.abspath(__file__))
+    # Construct command with all arguments
+    cmd = [
+        executable,
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "benchmarks", "performance_runner.py"),
+        implementation,
+        "--runs",
+        str(runs),
+        "--cpu-limit",
+        str(cpu_limit),
+        "--memory-size",
+        str(memory_size),
+        "--mixed-size",
+        str(mixed_size),
+    ]
 
-    # Ensure Cython extensions are built for CPython
-    if implementation in ["cpython", "cython"]:
-        try:
-            logging.info("Building Cython extensions...")
-            subprocess.run(
-                ["python3", "setup.py", "build_ext", "--inplace"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Failed to build Cython extensions: {e.stderr}")
-            return False
+    # Add verbose flag if specified
+    if verbose:
+        cmd.append("-v")
 
     try:
-        result = subprocess.run(
-            [executable, "benchmarks/performance_runner.py"], check=True, capture_output=True, text=True, env=env
-        )
-        for line in result.stdout.splitlines():
-            logging.info(f"{implementation.upper()} STDOUT: {line}")
+        # Run the benchmark
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+        # Log output
+        logging.info("Benchmark Output:")
+        logging.info(result.stdout)
+
+        if result.stderr:
+            logging.warning("Benchmark Errors:")
+            logging.warning(result.stderr)
+
         return True
+
     except subprocess.CalledProcessError as e:
-        if e.stderr:
-            for line in e.stderr.splitlines():
-                logging.warning(f"{implementation.upper()} STDERR: {line}")
-        logging.error(f"{implementation.capitalize()} benchmarks failed with return code {e.returncode}")
+        logging.error(f"Benchmark failed with exit code {e.returncode}")
+        logging.error("STDOUT:")
+        logging.error(e.stdout)
+        logging.error("STDERR:")
+        logging.error(e.stderr)
         return False
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Python Performance Benchmarks")
-    parser.add_argument(
-        "implementations",
-        nargs="*",
-        default=["cpython", "cython", "pypy"],
-        help="Specify which implementations to benchmark (cpython, cython, pypy)",
+    """Main function to run benchmarks."""
+    parser = argparse.ArgumentParser(
+        description="Python Performance Benchmarks", formatter_class=argparse.RawTextHelpFormatter
     )
+    parser.add_argument(
+        "implementation",
+        nargs="?",
+        default="cpython",
+        help="""Python implementation to benchmark
+Choices: 
+- cpython (Standard Python)
+- pypy (PyPy JIT-compiled implementation)""",
+    )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=30,
+        help="""Number of times to run each benchmark
+Default: 30
+Recommended for quick test: 3-5
+Example: --runs 5 (faster, less statistically significant)""",
+    )
+    parser.add_argument(
+        "--cpu-limit",
+        type=int,
+        default=10000,
+        help="""Limit for CPU-bound test (prime number calculation)
+- Determines the upper bound for prime number calculation
+- Smaller number = faster test
+- Default: 10000
+- Quick test example: --cpu-limit 100""",
+    )
+    parser.add_argument(
+        "--memory-size",
+        type=int,
+        default=1000,
+        help="""Size for memory-bound test
+- Controls matrix size or memory allocation
+- Smaller number = less memory and faster test
+- Default: 1000
+- Quick test example: --memory-size 10""",
+    )
+    parser.add_argument(
+        "--mixed-size",
+        type=int,
+        default=1000,
+        help="""Size for mixed test (Fibonacci with memoization)
+- Controls the Fibonacci sequence length
+- Smaller number = faster test
+- Default: 1000
+- Quick test example: --mixed-size 10""",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable detailed logging and debug information")
 
     args = parser.parse_args()
 
-    # Validate implementations
-    valid_impls = ["cpython", "cython", "pypy"]
-    implementations = [impl for impl in args.implementations if impl in valid_impls]
+    # Run the benchmark
+    success = run_benchmark(
+        implementation=args.implementation,
+        runs=args.runs,
+        cpu_limit=args.cpu_limit,
+        memory_size=args.memory_size,
+        mixed_size=args.mixed_size,
+        verbose=args.verbose,
+    )
 
-    if not implementations:
-        logging.error("No valid implementations specified.")
-        sys.exit(1)
-
-    # Run benchmarks for specified implementations
-    results = {}
-    for impl in implementations:
-        results[impl] = run_benchmark(impl)
-
-    # Summary
-    logging.info("\nBenchmark Summary:")
-    for impl, success in results.items():
-        logging.info(f"{impl.capitalize()}: {'✓ Completed' if success else '✗ Failed'}")
-
-    # Check if any benchmarks failed
-    if not all(results.values()):
-        sys.exit(1)
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":

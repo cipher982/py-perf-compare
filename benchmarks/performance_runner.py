@@ -1,3 +1,4 @@
+import argparse
 import logging
 import shutil
 import statistics
@@ -27,7 +28,7 @@ logging.basicConfig(
 )
 
 
-def measure_performance(func, *args, num_runs=30):
+def measure_performance(func, *args, num_runs=30, verbose=False):
     """Measure performance metrics for a given function."""
     logging.info(f"Starting performance measurement for {func.__module__}.{func.__name__}")
     logging.info(f"Arguments: {args}")
@@ -36,21 +37,26 @@ def measure_performance(func, *args, num_runs=30):
     memory_usages = []
 
     for run in range(num_runs):
-        logging.debug(f"Run {run + 1}/{num_runs}")
+        if verbose:
+            logging.debug(f"Run {run + 1}/{num_runs}")
 
         # Time measurement
         start_time = timeit.default_timer()
-        func(*args)
+        result = func(*args)
         end_time = timeit.default_timer()
         run_time = end_time - start_time
         times.append(run_time)
 
-        logging.debug(f"Run time: {run_time:.4f} seconds")
+        if verbose:
+            logging.debug(f"Run time: {run_time:.4f} seconds")
+            logging.debug(f"Result length/value: {len(result) if hasattr(result, '__len__') else result}")
 
         # Memory measurement
         memory_usage = memory_profiler.memory_usage((func, args), max_iterations=1)
         memory_usages.append(memory_usage[0])
-        logging.debug(f"Memory usage: {memory_usage[0]:.4f} MiB")
+
+        if verbose:
+            logging.debug(f"Memory usage: {memory_usage[0]:.4f} MiB")
 
     # Compute statistics
     avg_time = statistics.mean(times)
@@ -65,30 +71,35 @@ def measure_performance(func, *args, num_runs=30):
     return avg_time, std_time, avg_memory, std_memory
 
 
-def run_benchmarks(implementation="cpython"):
+def run_benchmarks(
+    implementation="cpython", num_runs=30, cpu_limit=10000, memory_size=1000, mixed_size=1000, verbose=False
+):
     """Run performance benchmarks for all test cases."""
     logging.info(f"Running benchmarks with {implementation} implementation...")
     logging.info(f"Using executable: {sys.executable}")
-    logging.info("Building Cython extensions...")
+    logging.info(f"Number of runs: {num_runs}")
+    logging.info(f"CPU test limit: {cpu_limit}")
+    logging.info(f"Memory test size: {memory_size}")
+    logging.info(f"Mixed test size: {mixed_size}")
 
     # Determine which test modules to use based on implementation
     if implementation == "cpython":
         test_modules = [
-            (cpu_test.run_cpu_test, "CPU Test"),
-            (memory_test.run_memory_test, "Memory Test"),
-            (mixed_test.run_mixed_test, "Mixed Test"),
+            (cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
+            (memory_test.run_memory_test, "Memory Test", (memory_size,)),
+            (mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
         ]
         if cython_cpu_test:
-            test_modules.append((cython_cpu_test.run_cpu_test, "Cython CPU Test"))
+            test_modules.append((cython_cpu_test.run_cpu_test, "Cython CPU Test", (cpu_limit,)))
         if cython_memory_test:
-            test_modules.append((cython_memory_test.run_memory_test, "Cython Memory Test"))
+            test_modules.append((cython_memory_test.run_memory_test, "Cython Memory Test", (memory_size,)))
         if cython_mixed_test:
-            test_modules.append((cython_mixed_test.run_mixed_test, "Cython Mixed Test"))
+            test_modules.append((cython_mixed_test.run_mixed_test, "Cython Mixed Test", (mixed_size,)))
     elif implementation == "pypy":
         test_modules = [
-            (pypy_cpu_test.run_cpu_test, "PyPy CPU Test"),
-            (pypy_memory_test.run_memory_test, "PyPy Memory Test"),
-            (pypy_mixed_test.run_mixed_test, "PyPy Mixed Test"),
+            (pypy_cpu_test.run_cpu_test, "PyPy CPU Test", (cpu_limit,)),
+            (pypy_memory_test.run_memory_test, "PyPy Memory Test", (memory_size,)),
+            (pypy_mixed_test.run_mixed_test, "PyPy Mixed Test", (mixed_size,)),
         ]
     else:
         logging.error(f"Invalid implementation: {implementation}")
@@ -100,10 +111,12 @@ def run_benchmarks(implementation="cpython"):
     shutil.os.makedirs(results_dir, exist_ok=True)
 
     # Run benchmarks
-    for test_func, test_name in test_modules:
+    for test_func, test_name, test_args in test_modules:
         try:
             logging.info(f"Running {test_name}")
-            avg_time, std_time, avg_memory, std_memory = measure_performance(test_func, 10000)
+            avg_time, std_time, avg_memory, std_memory = measure_performance(
+                test_func, *test_args, num_runs=num_runs, verbose=verbose
+            )
 
             # Save results to CSV
             results_file = f"{results_dir}/{test_name.lower().replace(' ', '_')}_results.csv"
@@ -114,12 +127,43 @@ def run_benchmarks(implementation="cpython"):
 
         except Exception as e:
             logging.error(f"Error running {test_name}: {e}")
+            import traceback
+
+            traceback.print_exc()
 
 
 def main():
     """Main function to run benchmarks."""
-    implementation = sys.argv[1] if len(sys.argv) > 1 else "cpython"
-    run_benchmarks(implementation)
+    parser = argparse.ArgumentParser(description="Python Performance Benchmarks")
+    parser.add_argument(
+        "implementation", nargs="?", default="cpython", help="Python implementation to benchmark (cpython or pypy)"
+    )
+    parser.add_argument("--runs", type=int, default=30, help="Number of benchmark runs")
+    parser.add_argument("--cpu-limit", type=int, default=10000, help="Limit for CPU-bound test (prime calculation)")
+    parser.add_argument("--memory-size", type=int, default=1000, help="Size for memory-bound test")
+    parser.add_argument("--mixed-size", type=int, default=1000, help="Size for mixed test")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+
+    # Parse known args to handle potential extra arguments
+    args, unknown = parser.parse_known_args()
+
+    # Configure logging level based on verbosity
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    # Validate implementation if provided
+    if args.implementation not in ["cpython", "pypy"]:
+        logging.warning(f"Invalid implementation '{args.implementation}'. Defaulting to cpython.")
+        args.implementation = "cpython"
+
+    run_benchmarks(
+        implementation=args.implementation,
+        num_runs=args.runs,
+        cpu_limit=args.cpu_limit,
+        memory_size=args.memory_size,
+        mixed_size=args.mixed_size,
+        verbose=args.verbose,
+    )
 
 
 if __name__ == "__main__":

@@ -9,6 +9,8 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
+    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
+    command: ["cpython"]  # Default command, can be overridden
 
   pypy:
     build: 
@@ -20,3 +22,5 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
+    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
+    command: ["pypy"]  # Default command, can be overridden
