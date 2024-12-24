@@ -22,10 +22,10 @@ COPY benchmarks/ benchmarks/
 # Activate virtual environment and install dependencies
 RUN . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install numpy cython memory-profiler && \
-    pip install psutil memory-profiler matplotlib pandas seaborn && \
+    pip install numpy cython memory-profiler psutil \
+                matplotlib pandas seaborn && \
     pip install -e . && \
-    python setup.py build_ext --inplace || true
+    pypy3 setup.py build_ext --inplace || true
 
 # Set up environment variables
 ENV PATH="/venv/bin:$PATH" \
@@ -34,5 +34,10 @@ ENV PATH="/venv/bin:$PATH" \
 # Set up entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Verify installations
+RUN . /venv/bin/activate && \
+    python -c "import memory_profiler; print(memory_profiler.__version__)" && \
+    python -c "import numpy; print(numpy.__version__)"
 
 ENTRYPOINT ["docker-entrypoint.sh", "pypy"]

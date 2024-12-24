@@ -10,7 +10,20 @@ services:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["all"]  # This will run both CPython and Cython tests
+    command: ["cpython"]  # Default to CPython tests
+
+  cython:
+    build: 
+      context: .
+      dockerfile: Dockerfile.cpython
+    volumes:
+      - .:/app
+      - ./results:/results
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
+    command: ["cython"]  # Cython tests
 
   pypy:
     build: 
