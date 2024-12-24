@@ -1,11 +1,24 @@
 #!/bin/bash
 set -e
 
-# Default implementations if none provided
-IMPLEMENTATIONS=${@:-cpython pypy cython}
+# Get the implementation name (first argument)
+IMPLEMENTATION=$1
+shift  # Remove first argument, leaving remaining args
 
-# Run benchmarks for each implementation
-for IMPLEMENTATION in $IMPLEMENTATIONS; do
+case "$IMPLEMENTATION" in
+  "all")
+    echo "Running CPython benchmarks..."
+    python /app/run_benchmarks.py "cpython" "$@"
+    
+    echo "Running Cython benchmarks..."
+    python /app/run_benchmarks.py "cython" "$@"
+    ;;
+    
+  *)
     echo "Running benchmarks for $IMPLEMENTATION..."
-    python /app/run_benchmarks.py "$IMPLEMENTATION"
-done
+    python /app/run_benchmarks.py "$IMPLEMENTATION" "$@"
+    ;;
+esac
+
+# Combine and display results
+echo "All benchmarks completed. Results saved in /app/results/"

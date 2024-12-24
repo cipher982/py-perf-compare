@@ -1,16 +1,16 @@
 services:
-  cpython:
+  benchmarks:
     build: 
       context: .
       dockerfile: Dockerfile.cpython
     volumes:
       - .:/app
-      - ./results/cpython:/results
+      - ./results:/results
     environment:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["cpython"]  # Default command, can be overridden
+    command: ["all"]  # This will run both CPython and Cython tests
 
   pypy:
     build: 
@@ -18,9 +18,11 @@ services:
       dockerfile: Dockerfile.pypy
     volumes:
       - .:/app
-      - ./results/pypy:/results
+      - ./results:/results
     environment:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["pypy"]  # Default command, can be overridden
+    command: ["pypy"]  # PyPy tests
+    depends_on:
+      - benchmarks

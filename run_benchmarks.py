@@ -19,16 +19,35 @@ logging.basicConfig(
 
 def find_executable(name):
     """Find executable path for different Python implementations."""
-    executables = {
-        "cpython": ["python3", "python"],
-        "pypy": ["pypy3", "pypy"],
-        "cython": ["python3", "python"],  # Cython runs through CPython
+    # Predefined paths for different implementations
+    implementation_paths = {
+        "cpython": ["/venv/bin/python3", "python3", "python"],
+        "pypy": ["/opt/pypy/bin/pypy3", "/venv/bin/pypy3", "pypy3", "pypy"],
+        "cython": ["/venv/bin/python3", "python3", "python"],  # Cython runs through CPython
     }
 
-    for exe in executables.get(name, []):
+    # Try predefined paths first
+    for exe in implementation_paths.get(name, []):
         path = shutil.which(exe)
         if path:
             return path
+
+    # Fallback to system-wide search
+    logging.warning(f"No predefined executable found for {name}. Searching system paths.")
+
+    # Generic search if no predefined path works
+    generic_exes = {
+        "cpython": ["python3", "python"],
+        "pypy": ["pypy3", "pypy"],
+        "cython": ["python3", "python"],
+    }
+
+    for exe in generic_exes.get(name, []):
+        path = shutil.which(exe)
+        if path:
+            return path
+
+    logging.error(f"No executable found for {name}")
     return None
 
 
@@ -104,10 +123,12 @@ def main():
         "implementation",
         nargs="?",
         default="cpython",
+        choices=["cpython", "pypy", "cython"],
         help="""Python implementation to benchmark
 Choices: 
 - cpython (Standard Python)
-- pypy (PyPy JIT-compiled implementation)""",
+- pypy (PyPy JIT-compiled implementation)
+- cython (Cython-optimized implementation)""",
     )
     parser.add_argument(
         "--runs",
@@ -150,6 +171,7 @@ Example: --runs 5 (faster, less statistically significant)""",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable detailed logging and debug information")
 
+    # Parse known args to handle potential extra arguments
     args = parser.parse_args()
 
     # Run the benchmark
