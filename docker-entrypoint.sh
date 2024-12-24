@@ -20,7 +20,8 @@ mkdir -p /app/results
 
 # Run the benchmarks
 echo "Running benchmarks with $IMPLEMENTATION..."
-$PYTHON_CMD run_benchmarks.py "$IMPLEMENTATION"
+cd /app/benchmarks
+$PYTHON_CMD performance_runner.py "$IMPLEMENTATION"
 
 # Copy results to mounted volume
-cp /app/results/* /results/ || echo "Error: Failed to copy results"
+cp -r /app/results/* /results/ 2>/dev/null || echo "Error: Failed to copy results"

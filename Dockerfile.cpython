@@ -17,11 +17,12 @@ RUN python -m venv /venv
 
 # Copy source files needed for build
 COPY src/ src/
+COPY benchmarks/ benchmarks/
 
 # Activate virtual environment and install dependencies
 RUN . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install numpy cython && \
+    pip install numpy cython memory-profiler && \
     pip install -e . && \
     python setup.py build_ext --inplace || true
 

@@ -3,7 +3,6 @@ import shutil
 import statistics
 import sys
 import timeit
-from datetime import datetime
 
 import memory_profiler
 
@@ -49,93 +48,79 @@ def measure_performance(func, *args, num_runs=30):
         logging.debug(f"Run time: {run_time:.4f} seconds")
 
         # Memory measurement
-        try:
-            logging.debug(f"Profiling function: {func.__name__}, args: {args}")
+        memory_usage = memory_profiler.memory_usage((func, args), max_iterations=1)
+        memory_usages.append(memory_usage[0])
+        logging.debug(f"Memory usage: {memory_usage[0]:.4f} MiB")
 
-            # Create a proper function call tuple for memory_profiler
-            func_tuple = (func, args, {})  # (function, args, kwargs)
-            mem_usage = memory_profiler.memory_usage(proc=func_tuple, interval=0.1, max_iterations=1)[0]
-            memory_usages.append(mem_usage)
-            logging.debug(f"Memory usage: {mem_usage:.2f} MB")
-        except Exception as e:
-            logging.warning(f"Memory profiling failed: {e}", exc_info=True)
-            memory_usages.append(0)
+    # Compute statistics
+    avg_time = statistics.mean(times)
+    std_time = statistics.stdev(times) if len(times) > 1 else 0
+    avg_memory = statistics.mean(memory_usages)
+    std_memory = statistics.stdev(memory_usages) if len(memory_usages) > 1 else 0
 
-    return {
-        "mean_time": statistics.mean(times),
-        "std_time": statistics.stdev(times) if len(times) > 1 else 0,
-        "mean_memory": statistics.mean(memory_usages),
-        "std_memory": statistics.stdev(memory_usages) if len(memory_usages) > 1 else 0,
-    }
+    logging.info("Performance Summary:")
+    logging.info(f"  Average Time: {avg_time:.4f} ± {std_time:.4f} seconds")
+    logging.info(f"  Average Memory: {avg_memory:.4f} ± {std_memory:.4f} MiB")
+
+    return avg_time, std_time, avg_memory, std_memory
 
 
-def run_benchmarks():
-    """Run performance benchmarks for all test cases and implementations."""
-    logging.info("Starting performance benchmarks")
+def run_benchmarks(implementation="cpython"):
+    """Run performance benchmarks for all test cases."""
+    logging.info(f"Running benchmarks with {implementation} implementation...")
+    logging.info(f"Using executable: {sys.executable}")
+    logging.info("Building Cython extensions...")
 
-    # Validate PyPy executable
-    pypy_executable = shutil.which("pypy3.10")
-    if not pypy_executable:
-        logging.warning("PyPy executable not found. Skipping PyPy benchmarks.")
-        benchmarks = {
-            "CPU Test (Python)": (cpu_test.run_cpu_test, 10000),  # Prime number calculation
-            "CPU Test (Cython)": (cython_cpu_test.run_cpu_test, 10000),
-            "Memory Test (Python)": (memory_test.run_memory_test, 200),  # Matrix size increased for better measurement
-            "Memory Test (Cython)": (cython_memory_test.run_memory_test, 200),
-            "Mixed Test (Python)": (mixed_test.run_mixed_test, 35),  # Fibonacci sequence
-            "Mixed Test (Cython)": (cython_mixed_test.run_mixed_test, 35),
-        }
+    # Determine which test modules to use based on implementation
+    if implementation == "cpython":
+        test_modules = [
+            (cpu_test.run_cpu_test, "CPU Test"),
+            (memory_test.run_memory_test, "Memory Test"),
+            (mixed_test.run_mixed_test, "Mixed Test"),
+        ]
+        if cython_cpu_test:
+            test_modules.append((cython_cpu_test.run_cpu_test, "Cython CPU Test"))
+        if cython_memory_test:
+            test_modules.append((cython_memory_test.run_memory_test, "Cython Memory Test"))
+        if cython_mixed_test:
+            test_modules.append((cython_mixed_test.run_mixed_test, "Cython Mixed Test"))
+    elif implementation == "pypy":
+        test_modules = [
+            (pypy_cpu_test.run_cpu_test, "PyPy CPU Test"),
+            (pypy_memory_test.run_memory_test, "PyPy Memory Test"),
+            (pypy_mixed_test.run_mixed_test, "PyPy Mixed Test"),
+        ]
     else:
-        benchmarks = {
-            "CPU Test (Python)": (cpu_test.run_cpu_test, 10000),  # Prime number calculation
-            "CPU Test (Cython)": (cython_cpu_test.run_cpu_test, 10000),
-            "CPU Test (PyPy)": (pypy_cpu_test.run_cpu_test, 10000),
-            "Memory Test (Python)": (memory_test.run_memory_test, 200),  # Matrix size increased for better measurement
-            "Memory Test (Cython)": (cython_memory_test.run_memory_test, 200),
-            "Memory Test (PyPy)": (pypy_memory_test.run_memory_test, 200),
-            "Mixed Test (Python)": (mixed_test.run_mixed_test, 35),  # Fibonacci sequence
-            "Mixed Test (Cython)": (cython_mixed_test.run_mixed_test, 35),
-            "Mixed Test (PyPy)": (pypy_mixed_test.run_mixed_test, 35),
-        }
+        logging.error(f"Invalid implementation: {implementation}")
+        return
 
-    results = {}
-    for name, (func, arg) in benchmarks.items():
-        logging.info(f"Running benchmark: {name}")
-        results[name] = measure_performance(func, arg)
+    # Create results directory
+    results_dir = f"/app/results/{implementation}"
+    shutil.rmtree(results_dir, ignore_errors=True)
+    shutil.os.makedirs(results_dir, exist_ok=True)
 
-    return results
+    # Run benchmarks
+    for test_func, test_name in test_modules:
+        try:
+            logging.info(f"Running {test_name}")
+            avg_time, std_time, avg_memory, std_memory = measure_performance(test_func, 10000)
+
+            # Save results to CSV
+            results_file = f"{results_dir}/{test_name.lower().replace(' ', '_')}_results.csv"
+            with open(results_file, "w") as f:
+                f.write("Metric,Value,Std Dev\n")
+                f.write(f"Time (seconds),{avg_time},{std_time}\n")
+                f.write(f"Memory (MiB),{avg_memory},{std_memory}\n")
+
+        except Exception as e:
+            logging.error(f"Error running {test_name}: {e}")
 
 
 def main():
-    try:
-        results = run_benchmarks()
-
-        # Print detailed results
-        for name, metrics in results.items():
-            logging.info(f"\n{name}:")
-            logging.info(f"  Mean Time: {metrics['mean_time']:.4f} ± {metrics['std_time']:.4f} seconds")
-            logging.info(f"  Mean Memory: {metrics['mean_memory']:.2f} ± {metrics['std_memory']:.2f} MB")
-
-        # Save results and generate plots
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        from benchmarks.results_processor import plot_results  # type: ignore
-        from benchmarks.results_processor import save_results_to_csv  # type: ignore
-
-        # Save to CSV
-        csv_path = save_results_to_csv(results, timestamp)
-        logging.info(f"\nResults saved to: {csv_path}")
-
-        # Generate plot
-        plot_path = plot_results(csv_path)
-        logging.info(f"Performance plot saved to: {plot_path}")
-
-        logging.info("Performance benchmarks completed successfully")
-
-    except Exception as e:
-        logging.error(f"An error occurred during benchmarking: {e}", exc_info=True)
+    """Main function to run benchmarks."""
+    implementation = sys.argv[1] if len(sys.argv) > 1 else "cpython"
+    run_benchmarks(implementation)
 
 
 if __name__ == "__main__":
-    import shutil
-
     main()
