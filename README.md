@@ -1,15 +1,24 @@
-# Python Performance Comparison Guide
+# Python Performance Comparison
+
+## Project Goals
+A benchmarking suite that compares performance across different Python implementations (CPython, Cython, PyPy) for various computational tasks. The project uses Docker to ensure consistent testing environments and reproducible results.
 
 ## Overview
-This project provides a comprehensive performance comparison of different Python implementations across various computational tasks, including:
+This project provides performance comparisons across three types of computational tasks:
+- CPU-bound operations (prime number calculations)
+- Memory-bound operations (matrix multiplication)
+- Mixed operations (Fibonacci sequence with memoization)
+
+Each task is implemented in:
 - Pure Python (CPython)
-- Cython-optimized
+- Cython-optimized code
 - PyPy-compatible implementations
 
 ## Project Structure
 ```
-python-tests/
-│
+.
+├── benchmarks/
+│   └── performance_runner.py    # Performance measurement script
 ├── src/
 │   ├── cpu_test.py             # Pure Python CPU-bound test
 │   ├── memory_test.py          # Pure Python memory-bound test
@@ -20,181 +29,106 @@ python-tests/
 │   ├── pypy_cpu_test.py        # PyPy-compatible CPU-bound test
 │   ├── pypy_memory_test.py     # PyPy-compatible memory-bound test
 │   └── pypy_mixed_test.py      # PyPy-compatible mixed test
-│
-├── benchmarks/
-│   └── performance_runner.py   # Performance measurement script
-│
-├── pyproject.toml              # Project configuration and dependencies
-├── setup.py                    # Cython extension build configuration
-└── README.md                   # Project documentation
+├── docker/
+│   ├── Dockerfile.cpython      # CPython environment
+│   └── Dockerfile.pypy         # PyPy environment
+├── docker-compose.yml          # Docker services configuration
+├── docker-entrypoint.sh        # Container startup script
+├── pyproject.toml             # Project configuration
+├── requirements-pypy.txt      # PyPy-specific dependencies
+├── run_benchmarks.py          # Main benchmark runner
+└── .gitignore                # Git ignore patterns
 ```
-
-## Test Cases
-1. **CPU-bound Test**: Calculate prime numbers
-2. **Memory-bound Test**: Matrix multiplication
-3. **Mixed Test**: Fibonacci sequence with memoization
-
-## Implementation Methods
-- Pure Python (CPython)
-- Cython-optimized
-- PyPy-compatible
 
 ## Prerequisites
-- Python 3.8+ (recommended 3.11+)
-- UV package manager
-- Cython
-- NumPy
-- PyPy (optional)
+- Docker
+- Docker Compose
 
-## Setup and Installation
+That's it! All other dependencies are handled by Docker.
 
-### 1. Install UV Package Manager
+## Running Benchmarks
+
+### Quick Start with Docker (Recommended)
 ```bash
-pip install uv
+# Build and run all benchmarks
+docker-compose up --build
+
+# View results in ./results directory
 ```
 
-### 2. Create Virtual Environment
-```bash
-# Create a new virtual environment
-python3 -m venv .venv
+The benchmarks will run in parallel across two containers:
+- `cpython`: Running CPython and Cython tests
+- `pypy`: Running PyPy tests
 
-# Activate the virtual environment
-source .venv/bin/activate  # macOS/Linux
-.venv\Scripts\activate     # Windows
+Results will be saved to:
+- `./results/cpython/` - CPython and Cython results
+- `./results/pypy/` - PyPy results
+
+### Benchmark Types
+
+#### CPU-bound Test
+Measures pure computational performance through prime number calculations.
+- Implementation: Sieve of Eratosthenes algorithm
+- Metrics: Raw computation speed
+- Expected results: [Placeholder for typical performance patterns]
+
+#### Memory-bound Test
+Evaluates memory handling through matrix operations.
+- Implementation: Matrix multiplication without NumPy
+- Metrics: Memory usage and operation speed
+- Expected results: [Placeholder for typical performance patterns]
+
+#### Mixed Test
+Tests both CPU and memory performance using Fibonacci sequence.
+- Implementation: Fibonacci with memoization
+- Metrics: Combined CPU and memory performance
+- Expected results: [Placeholder for typical performance patterns]
+
+## Results Interpretation
+[Placeholder for how to interpret benchmark results]
+
+## Development Setup
+If you want to develop or modify the benchmarks:
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/py-perf-compare.git
+cd py-perf-compare
 ```
 
-### 3. Install Project Dependencies
-```bash
-# Install dependencies with UV
-uv pip install -e . --system
-```
+2. Make your changes to the source files in:
+   - `src/` for test implementations
+   - `benchmarks/` for measurement logic
 
-### 4. Install PyPy (Optional)
-#### macOS (Homebrew)
-```bash
-brew install pypy3
-```
-
-#### Linux (Ubuntu/Debian)
-```bash
-sudo apt-get update
-sudo apt-get install pypy3
-```
-
-### 5. Compile Cython Extensions
-```bash
-# Compile Cython extensions
-python setup.py build_ext --inplace
-```
-
-## Running with Docker (Recommended)
-
-The easiest way to run the benchmarks is using Docker, which ensures consistent environments across different Python implementations.
-
-1. Build and run with Docker Compose:
+3. Test your changes:
 ```bash
 docker-compose up --build
 ```
 
-This will:
-- Create separate environments for CPython and PyPy
-- Run all benchmarks
-- Save results to the `./results` directory
-
-## Manual Setup (Alternative)
-
-If you prefer not to use Docker, you can set up the environments manually:
-
-### 1. CPython/Cython Setup
-```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -e .
-```
-
-### 2. PyPy Setup
-```bash
-# Create PyPy virtual environment
-pypy3 -m venv .venv-pypy
-
-# Activate PyPy environment
-source .venv-pypy/bin/activate  # On Windows: .venv-pypy\Scripts\activate
-
-# Install PyPy-specific dependencies
-pip install -r requirements-pypy.txt
-pip install -e .
-```
-
-### Running Benchmarks
-```bash
-# Make sure you're in the project root
-python run_benchmarks.py
-```
-
-## Running Performance Tests
-
-### Comprehensive Benchmark
-```bash
-python run_benchmarks.py
-```
-
-### Specific Implementation Benchmarks
-```bash
-# Run CPython and PyPy benchmarks
-python run_benchmarks.py cpython pypy
-
-# Run only Cython benchmarks
-python run_benchmarks.py cython
-```
-
-## Available Implementations
-- `cpython`: Standard Python implementation
-- `cython`: Cython-optimized tests
-- `pypy`: PyPy JIT-compiled implementation
-
-### Expected Outputs
-- Console output with performance metrics
-- Performance comparison graph in `results/performance_comparison_{timestamp}.png`
-- Detailed performance log in `performance_test.log`
-
-## Performance Metrics
-- Execution time
-- Memory usage
-- Comparative analysis across implementations
-
 ## Troubleshooting
 
-### Cython Compilation Errors
-- Ensure C compiler is installed (gcc, clang)
-- Install Python development headers:
-  ```bash
-  # macOS
-  brew install python-dev
+### Docker Issues
+- Ensure Docker daemon is running
+- Try removing old containers and images:
+```bash
+docker-compose down
+docker-compose rm -f
+docker-compose up --build
+```
 
-  # Ubuntu/Debian
-  sudo apt-get install python3-dev
-  ```
-
-### PyPy Compatibility
-- Some libraries may not be fully compatible with PyPy
-- Test and verify library support before benchmarking
-
-### Performance Variations
+### Result Variations
 Results may vary based on:
-- Hardware specifications
-- Python version
-- Cython version
-- System load
+- Host machine specifications
+- Docker resource allocation
+- System load during testing
+- Container resource limits
 
 ## Contributing
 1. Fork the repository
 2. Create a feature branch
 3. Implement your changes
-4. Run tests and benchmarks
+4. Test with Docker
 5. Submit a pull request
 
 ## License
-[Insert License Information]
+MIT License - See LICENSE file for details
