@@ -63,8 +63,9 @@ def run_benchmark(implementation, runs=30, cpu_limit=10000, memory_size=1000, mi
         cmd.append("-v")
 
     try:
-        # Run the benchmark
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Run the benchmark with a timeout of 1 hour (3600 seconds)
+        logging.info(f"Executing command: {' '.join(cmd)}")
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=3600)
 
         # Log output
         logging.info("Benchmark Output:")
@@ -76,12 +77,21 @@ def run_benchmark(implementation, runs=30, cpu_limit=10000, memory_size=1000, mi
 
         return True
 
+    except subprocess.TimeoutExpired:
+        logging.error("Benchmark timed out after 1 hour")
+        return False
     except subprocess.CalledProcessError as e:
         logging.error(f"Benchmark failed with exit code {e.returncode}")
         logging.error("STDOUT:")
         logging.error(e.stdout)
         logging.error("STDERR:")
         logging.error(e.stderr)
+        return False
+    except Exception as e:
+        logging.error(f"Unexpected error during benchmark: {e}")
+        import traceback
+
+        traceback.print_exc()
         return False
 
 

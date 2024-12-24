@@ -37,28 +37,45 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
     memory_usages = []
 
     for run in range(num_runs):
+        logging.info(f"Starting run {run + 1}/{num_runs}")
+
         if verbose:
             logging.debug(f"Run {run + 1}/{num_runs}")
 
-        # Time measurement
-        start_time = timeit.default_timer()
-        result = func(*args)
-        end_time = timeit.default_timer()
-        run_time = end_time - start_time
-        times.append(run_time)
+        try:
+            # Time measurement
+            start_time = timeit.default_timer()
+            result = func(*args)
+            end_time = timeit.default_timer()
+            run_time = end_time - start_time
+            times.append(run_time)
 
-        if verbose:
-            logging.debug(f"Run time: {run_time:.4f} seconds")
-            logging.debug(f"Result length/value: {len(result) if hasattr(result, '__len__') else result}")
+            logging.info(f"Completed run {run + 1}/{num_runs}")
 
-        # Memory measurement
-        memory_usage = memory_profiler.memory_usage((func, args), max_iterations=1)
-        memory_usages.append(memory_usage[0])
+            if verbose:
+                logging.debug(f"Run time: {run_time:.4f} seconds")
+                logging.debug(f"Result length/value: {len(result) if hasattr(result, '__len__') else result}")
 
-        if verbose:
-            logging.debug(f"Memory usage: {memory_usage[0]:.4f} MiB")
+            # Memory measurement
+            memory_usage = memory_profiler.memory_usage((func, args), max_iterations=1)
+            memory_usages.append(memory_usage[0])
+
+            if verbose:
+                logging.debug(f"Memory usage: {memory_usage[0]:.4f} MiB")
+
+        except Exception as e:
+            logging.error(f"Error in run {run + 1}/{num_runs}: {e}")
+            import traceback
+
+            traceback.print_exc()
+            # If a run fails, we'll skip it but continue with the benchmark
+            continue
 
     # Compute statistics
+    if not times:
+        logging.error("No successful runs completed!")
+        return 0, 0, 0, 0
+
     avg_time = statistics.mean(times)
     std_time = statistics.stdev(times) if len(times) > 1 else 0
     avg_memory = statistics.mean(memory_usages)
