@@ -51,7 +51,7 @@ That's it! All other dependencies are handled by Docker.
 ### Quick Start with Docker (Recommended)
 ```bash
 # Build and run all benchmarks
-docker-compose up --build
+docker compose up --build
 
 # View results in ./results directory
 ```
@@ -86,49 +86,3 @@ Tests both CPU and memory performance using Fibonacci sequence.
 
 ## Results Interpretation
 [Placeholder for how to interpret benchmark results]
-
-## Development Setup
-If you want to develop or modify the benchmarks:
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/py-perf-compare.git
-cd py-perf-compare
-```
-
-2. Make your changes to the source files in:
-   - `src/` for test implementations
-   - `benchmarks/` for measurement logic
-
-3. Test your changes:
-```bash
-docker-compose up --build
-```
-
-## Troubleshooting
-
-### Docker Issues
-- Ensure Docker daemon is running
-- Try removing old containers and images:
-```bash
-docker-compose down
-docker-compose rm -f
-docker-compose up --build
-```
-
-### Result Variations
-Results may vary based on:
-- Host machine specifications
-- Docker resource allocation
-- System load during testing
-- Container resource limits
-
-## Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Test with Docker
-5. Submit a pull request
-
-## License
-MIT License - See LICENSE file for details
