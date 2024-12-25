@@ -1,9 +1,12 @@
 import argparse
 import logging
+import logging.handlers
+import os
 import shutil
 import statistics
 import sys
 import timeit
+from datetime import datetime
 
 import memory_profiler
 
@@ -17,15 +20,60 @@ from src import pypy_cpu_test
 from src import pypy_memory_test
 from src import pypy_mixed_test
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s: %(message)s",
-    handlers=[
-        logging.FileHandler("performance_test.log"),
-        logging.StreamHandler(sys.stdout),
-    ],
-)
+sys.set_int_max_str_digits(0)  # Disable the integer string conversion limit
+
+
+def setup_logging(implementation):
+    """
+    Set up comprehensive logging with multiple handlers and detailed formatting.
+
+    Args:
+        implementation (str): The implementation being benchmarked (cpython, cython, pypy)
+    """
+    # Create results directory if it doesn't exist
+    results_dir = "/results"
+    os.makedirs(results_dir, exist_ok=True)
+
+    # Create a unique log filename with timestamp and implementation
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = os.path.join(results_dir, f"{implementation}_benchmark_{timestamp}.log")
+
+    # Configure logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    # Console Handler - for real-time output
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter("%(asctime)s - [%(levelname)8s] - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    console_handler.setFormatter(console_formatter)
+
+    # File Handler - for detailed logging
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter(
+        "%(asctime)s - [%(levelname)8s] - [%(filename)s:%(lineno)d] - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    file_handler.setFormatter(file_formatter)
+
+    # Rotate File Handler - to manage log file sizes
+    rotate_handler = logging.handlers.RotatingFileHandler(
+        log_filename,
+        maxBytes=10 * 1024 * 1024,  # 10 MB
+        backupCount=5,
+    )
+    rotate_handler.setLevel(logging.DEBUG)
+    rotate_handler.setFormatter(file_formatter)
+
+    # Clear any existing handlers
+    logger.handlers.clear()
+
+    # Add handlers
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+    logger.addHandler(rotate_handler)
+
+    return log_filename
 
 
 def measure_performance(func, *args, num_runs=30, verbose=False):
@@ -54,7 +102,7 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
 
             if verbose:
                 logging.debug(f"Run time: {run_time:.4f} seconds")
-                logging.debug(f"Result length/value: {len(result) if hasattr(result, '__len__') else result}")
+                logging.debug(f"Result length/value: {len(result) if hasattr(result, '__len__') else type(result)}")
 
             # Memory measurement
             memory_usage = memory_profiler.memory_usage((func, args), max_iterations=1)
@@ -150,37 +198,38 @@ def run_benchmarks(
 
 
 def main():
-    """Main function to run benchmarks."""
-    parser = argparse.ArgumentParser(description="Python Performance Benchmarks")
+    parser = argparse.ArgumentParser(description="Run performance benchmarks")
     parser.add_argument(
-        "implementation", nargs="?", default="cpython", help="Python implementation to benchmark (cpython or pypy)"
+        "implementation", choices=["cpython", "cython", "pypy", "all"], help="Implementation to benchmark"
     )
-    parser.add_argument("--runs", type=int, default=30, help="Number of benchmark runs")
-    parser.add_argument("--cpu-limit", type=int, default=10000, help="Limit for CPU-bound test (prime calculation)")
-    parser.add_argument("--memory-size", type=int, default=1000, help="Size for memory-bound test")
-    parser.add_argument("--mixed-size", type=int, default=1000, help="Size for mixed test")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument("--runs", type=int, default=30, help="Number of runs for each benchmark")
+    parser.add_argument("--cpu-limit", type=int, default=10000, help="Limit for CPU benchmark")
+    parser.add_argument("--memory-size", type=int, default=1000, help="Size for memory benchmark")
+    parser.add_argument("--mixed-size", type=int, default=1000, help="Size for mixed benchmark")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
-    # Parse known args to handle potential extra arguments
-    args, unknown = parser.parse_known_args()
+    args = parser.parse_args()
 
-    # Configure logging level based on verbosity
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-
-    # Validate implementation if provided
-    if args.implementation not in ["cpython", "pypy"]:
+    # Handle invalid implementation
+    if args.implementation not in ["cpython", "cython", "pypy", "all"]:
         logging.warning(f"Invalid implementation '{args.implementation}'. Defaulting to cpython.")
         args.implementation = "cpython"
 
-    run_benchmarks(
-        implementation=args.implementation,
-        num_runs=args.runs,
-        cpu_limit=args.cpu_limit,
-        memory_size=args.memory_size,
-        mixed_size=args.mixed_size,
-        verbose=args.verbose,
-    )
+    setup_logging(args.implementation)
+
+    # Determine which implementations to run
+    implementations = ["cpython", "cython", "pypy"] if args.implementation == "all" else [args.implementation]
+
+    # Run benchmarks for specified implementations
+    for impl in implementations:
+        run_benchmarks(
+            implementation=impl,
+            num_runs=args.runs,
+            cpu_limit=args.cpu_limit,
+            memory_size=args.memory_size,
+            mixed_size=args.mixed_size,
+            verbose=args.verbose,
+        )
 
 
 if __name__ == "__main__":

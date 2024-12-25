@@ -2,42 +2,24 @@
 FROM pypy:3.10-slim
 WORKDIR /app
 
-# Copy dependency files first for better caching
-COPY pyproject.toml setup.py ./
-
-# Install build dependencies
+# Install build dependencies and clean up in one layer
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
+    gcc g++ make \
     && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN pypy3 -m venv /venv
-
-# Copy source files needed for build
-COPY src/ src/
-COPY benchmarks/ benchmarks/
-
-# Activate virtual environment and install dependencies
-RUN . /venv/bin/activate && \
+# Create venv and install Python dependencies in one layer
+COPY requirements-pypy.txt .
+RUN pypy3 -m venv /venv && \
+    . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install numpy cython memory-profiler psutil \
-                matplotlib pandas seaborn && \
-    pip install -e . && \
-    pypy3 setup.py build_ext --inplace || true
+    pip install -r requirements-pypy.txt
 
-# Set up environment variables
+# Set up environment
 ENV PATH="/venv/bin:$PATH" \
     PYTHONPATH=/app
 
-# Set up entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Verify installations
-RUN . /venv/bin/activate && \
-    python -c "import memory_profiler; print(memory_profiler.__version__)" && \
-    python -c "import numpy; print(numpy.__version__)"
 
 ENTRYPOINT ["docker-entrypoint.sh", "pypy"]

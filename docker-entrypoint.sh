@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# Enhanced logging function
+log() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    echo "[$timestamp] [$level] $message"
+}
+
 # Get the implementation name (first argument)
 IMPLEMENTATION=$1
 shift  # Remove first argument, leaving remaining args
@@ -13,24 +21,37 @@ VALID_IMPLEMENTATIONS=("cpython" "cython" "pypy" "all")
 
 # Check if the implementation is valid
 if [[ ! " ${VALID_IMPLEMENTATIONS[@]} " =~ " ${IMPLEMENTATION} " ]]; then
-    echo "Error: Invalid implementation. Must be one of: ${VALID_IMPLEMENTATIONS[*]}"
+    log "ERROR" "Invalid implementation. Must be one of: ${VALID_IMPLEMENTATIONS[*]}"
     exit 1
 fi
 
+# Start timestamp for entire benchmark run
+START_TIME=$(date +%s)
+log "INFO" "Starting benchmark suite for implementation: $IMPLEMENTATION"
+
 case "$IMPLEMENTATION" in
   "all")
-    echo "Running all benchmarks..."
-    python /app/run_benchmarks.py "cpython" "$@"
-    python /app/run_benchmarks.py "cython" "$@"
-    python /app/run_benchmarks.py "pypy" "$@"
+    log "INFO" "Running benchmarks for all implementations..."
+    for impl in "cpython" "cython" "pypy"; do
+      log "INFO" "Starting benchmarks for $impl"
+      python /app/benchmarks/performance_runner.py "$impl" "$@"
+      log "INFO" "Completed benchmarks for $impl"
+    done
     ;;
     
   *)
-    echo "Running benchmarks for $IMPLEMENTATION..."
-    python /app/run_benchmarks.py "$IMPLEMENTATION" "$@"
+    log "INFO" "Running benchmarks for $IMPLEMENTATION"
+    python /app/benchmarks/performance_runner.py "$IMPLEMENTATION" "$@"
     ;;
 esac
 
+# End timestamp and calculate total duration
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+
+log "INFO" "All benchmarks completed for $IMPLEMENTATION"
+log "INFO" "Total benchmark duration: $DURATION seconds"
+
 # Combine and display results
-echo "All benchmarks completed. Results saved in /results/"
+log "INFO" "Results saved in /results/"
 ls -l /results/

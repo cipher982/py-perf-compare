@@ -1,5 +1,5 @@
 services:
-  benchmarks:
+  cpython:  # renamed to clearly indicate it's the CPython container
     build: 
       context: .
       dockerfile: Dockerfile.cpython
@@ -38,4 +38,4 @@ services:
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
     command: ["pypy"]  # PyPy tests
     depends_on:
-      - benchmarks
+      - cpython  # updated to match new service name
