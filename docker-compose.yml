@@ -1,5 +1,5 @@
 services:
-  cpython:  # renamed to clearly indicate it's the CPython container
+  benchmark-controller:  # neutral controller that orchestrates benchmarks
     build: 
       context: .
       dockerfile: Dockerfile.cpython
@@ -10,9 +10,8 @@ services:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["cpython"]  # Default to CPython tests
 
-  cython:
+  cpython:  # specific CPython runtime
     build: 
       context: .
       dockerfile: Dockerfile.cpython
@@ -23,9 +22,26 @@ services:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["cython"]  # Cython tests
+    command: ["cpython"]
+    depends_on:
+      - benchmark-controller
 
-  pypy:
+  cython:  # specific Cython runtime
+    build: 
+      context: .
+      dockerfile: Dockerfile.cpython
+    volumes:
+      - .:/app
+      - ./results:/results
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
+    command: ["cython"]
+    depends_on:
+      - benchmark-controller
+
+  pypy:  # specific PyPy runtime
     build: 
       context: .
       dockerfile: Dockerfile.pypy
@@ -36,6 +52,6 @@ services:
       - PYTHONPATH=/app
       - PYTHONDONTWRITEBYTECODE=1
     entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["pypy"]  # PyPy tests
+    command: ["pypy"]
     depends_on:
-      - cpython  # updated to match new service name
+      - benchmark-controller
