@@ -164,9 +164,9 @@ def run_benchmarks(
         ]
     elif implementation == "pypy":
         test_modules = [
-            (pypy_cpu_test.run_cpu_test, "PyPy CPU Test", (cpu_limit,)),
-            (pypy_memory_test.run_memory_test, "PyPy Memory Test", (memory_size,)),
-            (pypy_mixed_test.run_mixed_test, "PyPy Mixed Test", (mixed_size,)),
+            (pypy_cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
+            (pypy_memory_test.run_memory_test, "Memory Test", (memory_size,)),
+            (pypy_mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
         ]
     else:
         logging.error(f"Invalid implementation: {implementation}")
