@@ -8,12 +8,18 @@ RUN apt-get update && \
     gcc g++ make \
     && rm -rf /var/lib/apt/lists/*
 
-# Create venv and install Python dependencies in one layer
+# Copy only requirements first for better caching
 COPY requirements-pypy.txt .
+
+# Create venv and install Python dependencies in one layer
 RUN pypy3 -m venv /venv && \
     . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
     pip install -r requirements-pypy.txt
+
+# Copy source files after dependencies are installed
+COPY src/ src/
+COPY benchmarks/ benchmarks/
 
 # Set up environment
 ENV PATH="/venv/bin:$PATH" \
