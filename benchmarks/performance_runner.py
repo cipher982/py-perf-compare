@@ -154,12 +154,12 @@ def run_benchmarks(
             (memory_test.run_memory_test, "Memory Test", (memory_size,)),
             (mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
         ]
-        if cython_cpu_test:
-            test_modules.append((cython_cpu_test.run_cpu_test, "Cython CPU Test", (cpu_limit,)))
-        if cython_memory_test:
-            test_modules.append((cython_memory_test.run_memory_test, "Cython Memory Test", (memory_size,)))
-        if cython_mixed_test:
-            test_modules.append((cython_mixed_test.run_mixed_test, "Cython Mixed Test", (mixed_size,)))
+    elif implementation == "cython":
+        test_modules = [
+            (cython_cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
+            (cython_memory_test.run_memory_test, "Memory Test", (memory_size,)),
+            (cython_mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
+        ]
     elif implementation == "pypy":
         test_modules = [
             (pypy_cpu_test.run_cpu_test, "PyPy CPU Test", (cpu_limit,)),
@@ -171,7 +171,7 @@ def run_benchmarks(
         return
 
     # Create results directory
-    results_dir = f"/app/results/{implementation}"
+    results_dir = f"/results/{implementation}"
     shutil.rmtree(results_dir, ignore_errors=True)
     shutil.os.makedirs(results_dir, exist_ok=True)
 
