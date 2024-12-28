@@ -48,97 +48,103 @@ def process_results_directory(results_dir="/results"):
 
 def plot_results(combined_csv):
     """Generate performance visualization from combined results."""
-    # Read results
     df = pd.read_csv(combined_csv)
-
-    # Capitalize implementation names
     df["implementation"] = df["implementation"].str.upper()
 
-    # Set style with better visibility
-    plt.style.use("seaborn")
+    # Create single figure with two columns: Time and Memory
+    fig, (ax_time, ax_mem) = plt.subplots(1, 2, figsize=(15, 8))
 
-    # Create figure with subplots for each test type
-    test_types = sorted(df["test_type"].unique())
-    fig, axes = plt.subplots(len(test_types), 2, figsize=(15, 5 * len(test_types)))
+    # Plot execution times
+    sns.barplot(
+        data=df,
+        x="test_type",
+        y="mean_time",
+        hue="implementation",
+        ax=ax_time,
+        palette="Set2",
+        capsize=0.05,
+        err_kws={"linewidth": 2},
+    )
 
-    # Color palette for better distinction
-    colors = ["#2ecc71", "#3498db", "#e74c3c"]
+    # Format time axis and labels
+    ax_time.set_yscale("log")  # Use log scale for better visibility of small differences
+    ax_time.set_title("Execution Time by Test", pad=20, fontsize=12, fontweight="bold")
+    ax_time.set_xlabel("Test Type", fontsize=10)
+    ax_time.set_ylabel("Time (seconds)", fontsize=10)
 
-    # Find max memory usage for consistent y-axis
-    max_memory = df["mean_memory"].max() * 1.2  # Add 20% padding
+    # Add value labels on bars for time
+    for container in ax_time.containers:
+        for bar in container:
+            height = bar.get_height()
+            if height < 0.001:
+                label = f"{height:.2e}"
+            else:
+                label = f"{height:.3f}"
+            ax_time.text(
+                bar.get_x() + bar.get_width() / 2, height, label, ha="center", va="bottom", fontsize=8, rotation=45
+            )
 
-    for idx, test_type in enumerate(test_types):
-        test_data = df[df["test_type"] == test_type].copy()
+    # Plot memory usage
+    sns.barplot(
+        data=df,
+        x="test_type",
+        y="mean_memory",
+        hue="implementation",
+        ax=ax_mem,
+        palette="Set2",
+        capsize=0.05,
+        err_kws={"linewidth": 2},
+    )
 
-        # Plot execution time
-        ax_time = axes[idx, 0] if len(test_types) > 1 else axes[0]
-        sns.barplot(
-            data=test_data,
-            x="implementation",
-            y="mean_time",
-            hue="implementation",
-            ax=ax_time,
-            palette=colors,
-            capsize=0.05,
-            err_kws={"linewidth": 2},
-            legend=False,
+    # Format memory axis and labels
+    ax_mem.set_title("Memory Usage by Test", pad=20, fontsize=12, fontweight="bold")
+    ax_mem.set_xlabel("Test Type", fontsize=10)
+    ax_mem.set_ylabel("Memory (MB)", fontsize=10)
+
+    # Add value labels on bars for memory
+    for container in ax_mem.containers:
+        for bar in container:
+            height = bar.get_height()
+            ax_mem.text(
+                bar.get_x() + bar.get_width() / 2,
+                height,
+                f"{height:.1f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                rotation=45,
+            )
+
+    # Adjust layout and labels
+    for ax in [ax_time, ax_mem]:
+        ax.grid(True, alpha=0.3, linestyle="--")
+        # Move legend to top
+        ax.legend(
+            title="Implementation",
+            bbox_to_anchor=(0.5, 1.15),
+            loc="center",
+            ncol=3,
+            fontsize=9,
         )
+        # Rotate x-axis labels for better readability
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
-        # Always use log scale for time to handle small values better
-        ax_time.set_yscale("log")
-        ax_time.set_title(f"{test_type} Test - Execution Time", pad=20, fontsize=12, fontweight="bold")
-        ax_time.set_ylabel("Time (seconds)", fontsize=10)
+    # Add overall title
+    fig.suptitle(
+        "Performance Comparison: CPython vs Cython vs PyPy",
+        y=1.1,
+        fontsize=14,
+        fontweight="bold",
+    )
 
-        # Plot memory usage
-        ax_mem = axes[idx, 1] if len(test_types) > 1 else axes[1]
-        sns.barplot(
-            data=test_data,
-            x="implementation",
-            y="mean_memory",
-            hue="implementation",
-            ax=ax_mem,
-            palette=colors,
-            capsize=0.05,
-            err_kws={"linewidth": 2},
-            legend=False,
-        )
-        ax_mem.set_title(f"{test_type} Test - Memory Usage", pad=20, fontsize=12, fontweight="bold")
-        ax_mem.set_ylabel("Memory (MB)", fontsize=10)
-
-        # Set consistent y-axis for memory plots
-        ax_mem.set_ylim(0, max_memory)
-
-        # Rotate labels and adjust layout
-        for ax in [ax_time, ax_mem]:
-            ax.tick_params(axis="x", rotation=45)
-            ax.grid(True, alpha=0.3, linestyle="--")
-
-            # Add value labels on top of bars with appropriate formatting
-            for p in ax.patches:
-                height = p.get_height()
-                if ax == ax_time:
-                    # Format time with scientific notation for very small values
-                    if height < 0.001:
-                        value_text = f"{height:.2e}"
-                    else:
-                        value_text = f"{height:.3f}"
-                else:
-                    # Format memory with 1 decimal place
-                    value_text = f"{height:.1f}"
-
-                ax.text(p.get_x() + p.get_width() / 2.0, height, value_text, ha="center", va="bottom", fontsize=9)
-
-    # Add a title for the entire figure
-    fig.suptitle("Performance Comparison: Time and Memory Usage", y=1.02, fontsize=14, fontweight="bold")
-
-    # Adjust layout
+    # Adjust layout to prevent overlapping
     plt.tight_layout()
 
     # Save plot
     plot_dir = os.path.dirname(combined_csv)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     plot_path = os.path.join(plot_dir, f"performance_comparison_{timestamp}.png")
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+    fig.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close()
 
     return plot_path
