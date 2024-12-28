@@ -30,13 +30,15 @@ def setup_logging(implementation):
     Args:
         implementation (str): The implementation being benchmarked (cpython, cython, pypy)
     """
-    # Create results directory if it doesn't exist
+    # Create results and logs directories if they don't exist
     results_dir = "/results"
+    logs_dir = os.path.join(results_dir, "logs")
     os.makedirs(results_dir, exist_ok=True)
+    os.makedirs(logs_dir, exist_ok=True)
 
     # Create a unique log filename with timestamp and implementation
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = os.path.join(results_dir, f"{implementation}_benchmark_{timestamp}.log")
+    log_filename = os.path.join(logs_dir, f"{implementation}_benchmark_{timestamp}.log")
 
     # Configure logging
     logger = logging.getLogger()
