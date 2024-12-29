@@ -20,13 +20,18 @@ Each task is implemented in:
 ├── benchmarks/
 │   └── performance_runner.py    # Performance measurement script
 ├── src/
-│   ├── __init__.py             # Package initialization
-│   ├── cpu_test.py             # Pure Python CPU-bound test (used by CPython & PyPy)
-│   ├── memory_test.py          # Pure Python memory-bound test (used by CPython & PyPy)
-│   ├── mixed_test.py           # Pure Python mixed test (used by CPython & PyPy)
+│   ├── cpu_test.py             # Pure Python CPU-bound test
+│   ├── memory_test.py          # Pure Python memory-bound test
+│   ├── mixed_test.py           # Pure Python mixed test
 │   ├── cython_cpu_test.pyx     # Cython CPU-bound test
 │   ├── cython_memory_test.pyx  # Cython memory-bound test
-│   └── cython_mixed_test.pyx   # Cython mixed test
+│   ├── cython_mixed_test.pyx   # Cython mixed test
+│   ├── pypy_cpu_test.py        # PyPy-compatible CPU-bound test
+│   ├── pypy_memory_test.py     # PyPy-compatible memory-bound test
+│   └── pypy_mixed_test.py      # PyPy-compatible mixed test
+├── docker/
+│   ├── Dockerfile.cpython      # CPython environment
+│   └── Dockerfile.pypy         # PyPy environment
 ├── docker-compose.yml          # Docker services configuration
 ├── docker-entrypoint.sh        # Container startup script
 ├── pyproject.toml             # Project configuration

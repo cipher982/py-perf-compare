@@ -16,9 +16,6 @@ from src import cython_memory_test
 from src import cython_mixed_test
 from src import memory_test
 from src import mixed_test
-from src import pypy_cpu_test
-from src import pypy_memory_test
-from src import pypy_mixed_test
 
 sys.set_int_max_str_digits(0)  # Disable the integer string conversion limit
 
@@ -150,7 +147,7 @@ def run_benchmarks(
     logging.info(f"Mixed test size: {mixed_size}")
 
     # Determine which test modules to use based on implementation
-    if implementation == "cpython":
+    if implementation == "cpython" or implementation == "pypy":
         test_modules = [
             (cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
             (memory_test.run_memory_test, "Memory Test", (memory_size,)),
@@ -161,12 +158,6 @@ def run_benchmarks(
             (cython_cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
             (cython_memory_test.run_memory_test, "Memory Test", (memory_size,)),
             (cython_mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
-        ]
-    elif implementation == "pypy":
-        test_modules = [
-            (pypy_cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
-            (pypy_memory_test.run_memory_test, "Memory Test", (memory_size,)),
-            (pypy_mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
         ]
     else:
         logging.error(f"Invalid implementation: {implementation}")

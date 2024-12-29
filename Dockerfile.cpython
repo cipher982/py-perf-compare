@@ -2,9 +2,6 @@
 FROM python:3.11-slim
 WORKDIR /app
 
-# Copy dependency files first for better caching
-COPY pyproject.toml setup.py ./
-
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -15,16 +12,10 @@ RUN apt-get update && \
 # Create virtual environment
 RUN python -m venv /venv
 
-# Copy source files needed for build
-COPY src/ src/
-COPY benchmarks/ benchmarks/
-
-# Activate virtual environment and install dependencies
+# Install core dependencies
 RUN . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install numpy cython memory-profiler && \
-    pip install -e . && \
-    python setup.py build_ext --inplace || true
+    pip install numpy cython memory-profiler
 
 # Set up environment variables
 ENV PATH="/venv/bin:$PATH" \
