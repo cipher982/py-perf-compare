@@ -9,6 +9,14 @@ log() {
     echo "[$timestamp] [$level] $message"
 }
 
+# Function to compile Cython files
+compile_cython() {
+    log "INFO" "Compiling Cython files..."
+    cd /app
+    python setup.py build_ext --inplace
+    cd - > /dev/null
+}
+
 # Get the implementation name (first argument)
 IMPLEMENTATION=$1
 shift  # Remove first argument, leaving remaining args
@@ -23,6 +31,11 @@ VALID_IMPLEMENTATIONS=("cpython" "cython" "pypy" "all")
 if [[ ! " ${VALID_IMPLEMENTATIONS[@]} " =~ " ${IMPLEMENTATION} " ]]; then
     log "ERROR" "Invalid implementation. Must be one of: ${VALID_IMPLEMENTATIONS[*]}"
     exit 1
+fi
+
+# Compile Cython files if needed
+if [ "$IMPLEMENTATION" = "cython" ] || [ "$IMPLEMENTATION" = "all" ]; then
+    compile_cython
 fi
 
 # Start timestamp for entire benchmark run
