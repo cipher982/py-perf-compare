@@ -11,12 +11,18 @@ from datetime import datetime
 import memory_profiler
 from tqdm import tqdm
 
-from src import cpu_test
-from src import cython_cpu_test
-from src import cython_memory_test
-from src import cython_mixed_test
-from src import memory_test
-from src import mixed_test
+from src.numpy.cpu_test_cython import run_cpu_test as numpy_cython_cpu_test
+from src.numpy.cpu_test_numpy import run_cpu_test as numpy_python_cpu_test
+from src.numpy.memory_test_cython import run_memory_test as numpy_cython_memory_test
+from src.numpy.memory_test_python import run_memory_test as numpy_python_memory_test
+from src.pure.cpu_test_cython import run_cpu_test as pure_cython_cpu_test
+
+# Import test implementations
+from src.pure.cpu_test_python import run_cpu_test as pure_python_cpu_test
+from src.pure.memory_test_cython import run_memory_test as pure_cython_memory_test
+from src.pure.memory_test_python import run_memory_test as pure_python_memory_test
+from src.pure.mixed_test_cython import run_mixed_test as pure_cython_mixed_test
+from src.pure.mixed_test_python import run_mixed_test as pure_python_mixed_test
 
 sys.set_int_max_str_digits(0)
 
@@ -148,17 +154,29 @@ def run_benchmarks(
     logging.info(f"Mixed test size: {mixed_size}\n")
 
     # Determine which test modules to use based on implementation
-    if implementation == "cpython" or implementation == "pypy":
+    if implementation == "cpython":
         test_modules = [
-            (cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
-            (memory_test.run_memory_test, "Memory Test", (memory_size,)),
-            (mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
+            (pure_python_cpu_test, "CPU Test (Pure Python)", (cpu_limit,)),
+            (numpy_python_cpu_test, "CPU Test (NumPy Python)", (cpu_limit,)),
+            (pure_python_memory_test, "Memory Test (Pure Python)", (memory_size,)),
+            (numpy_python_memory_test, "Memory Test (NumPy Python)", (memory_size,)),
+            (pure_python_mixed_test, "Mixed Test (Pure Python)", (mixed_size,)),
         ]
     elif implementation == "cython":
         test_modules = [
-            (cython_cpu_test.run_cpu_test, "CPU Test", (cpu_limit,)),
-            (cython_memory_test.run_memory_test, "Memory Test", (memory_size,)),
-            (cython_mixed_test.run_mixed_test, "Mixed Test", (mixed_size,)),
+            (pure_cython_cpu_test, "CPU Test (Pure Cython)", (cpu_limit,)),
+            (numpy_cython_cpu_test, "CPU Test (NumPy Cython)", (cpu_limit,)),
+            (pure_cython_memory_test, "Memory Test (Pure Cython)", (memory_size,)),
+            (numpy_cython_memory_test, "Memory Test (NumPy Cython)", (memory_size,)),
+            (pure_cython_mixed_test, "Mixed Test (Pure Cython)", (mixed_size,)),
+        ]
+    elif implementation == "pypy":
+        test_modules = [
+            (pure_python_cpu_test, "CPU Test (Pure PyPy)", (cpu_limit,)),
+            (numpy_python_cpu_test, "CPU Test (NumPy PyPy)", (cpu_limit,)),
+            (pure_python_memory_test, "Memory Test (Pure PyPy)", (memory_size,)),
+            (numpy_python_memory_test, "Memory Test (NumPy PyPy)", (memory_size,)),
+            (pure_python_mixed_test, "Mixed Test (Pure PyPy)", (mixed_size,)),
         ]
     else:
         logging.error(f"Invalid implementation: {implementation}")
@@ -182,9 +200,9 @@ def run_benchmarks(
             # Save results to CSV
             results_file = f"{results_dir}/{test_name.lower().replace(' ', '_')}_results.csv"
             with open(results_file, "w") as f:
-                f.write("Metric,Value,Std Dev\n")
-                f.write(f"Time (seconds),{avg_time},{std_time}\n")
-                f.write(f"Memory (MiB),{avg_memory},{std_memory}\n")
+                f.write("Implementation,Test Type,Metric,Value,Std Dev\n")
+                f.write(f"{implementation},{test_name},Time (seconds),{avg_time},{std_time}\n")
+                f.write(f"{implementation},{test_name},Memory (MiB),{avg_memory},{std_memory}\n")
 
         except Exception as e:
             logging.error(f"Error running {test_name}: {e}")
@@ -200,7 +218,10 @@ def run_benchmarks(
 def main():
     parser = argparse.ArgumentParser(description="Run performance benchmarks")
     parser.add_argument(
-        "implementation", choices=["cpython", "cython", "pypy", "all"], help="Implementation to benchmark"
+        "implementations",
+        nargs="+",  # Accept one or more values
+        choices=["cpython", "cython", "pypy", "all"],
+        help="Implementation(s) to benchmark. Use 'all' for all implementations or specify one or more.",
     )
     parser.add_argument("--runs", type=int, default=30, help="Number of runs for each benchmark")
     parser.add_argument("--cpu-limit", type=int, default=10000, help="Limit for CPU benchmark")
@@ -210,18 +231,18 @@ def main():
 
     args = parser.parse_args()
 
-    # Handle invalid implementation
-    if args.implementation not in ["cpython", "cython", "pypy", "all"]:
-        logging.warning(f"Invalid implementation '{args.implementation}'. Defaulting to cpython.")
-        args.implementation = "cpython"
-
-    setup_logging(args.implementation)
+    # Set up logging for the first implementation
+    setup_logging(args.implementations[0])
 
     # Determine which implementations to run
-    implementations = ["cpython", "cython", "pypy"] if args.implementation == "all" else [args.implementation]
+    implementations_to_run = []
+    if "all" in args.implementations:
+        implementations_to_run = ["cpython", "cython", "pypy"]
+    else:
+        implementations_to_run = args.implementations
 
     # Run benchmarks for specified implementations
-    for impl in implementations:
+    for impl in implementations_to_run:
         run_benchmarks(
             implementation=impl,
             num_runs=args.runs,
