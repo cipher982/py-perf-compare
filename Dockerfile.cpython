@@ -15,7 +15,7 @@ RUN python -m venv /venv
 # Install core dependencies
 RUN . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install numpy cython memory-profiler
+    pip install numpy cython memory-profiler tqdm
 
 # Set up environment variables
 ENV PATH="/venv/bin:$PATH" \

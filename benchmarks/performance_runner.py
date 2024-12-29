@@ -9,6 +9,7 @@ import timeit
 from datetime import datetime
 
 import memory_profiler
+from tqdm import tqdm
 
 from src import cpu_test
 from src import cython_cpu_test
@@ -17,7 +18,10 @@ from src import cython_mixed_test
 from src import memory_test
 from src import mixed_test
 
-sys.set_int_max_str_digits(0)  # Disable the integer string conversion limit
+sys.set_int_max_str_digits(0)
+
+DIVIDER = "=" * 50
+SUBDIV = "-" * 20
 
 
 def setup_logging(implementation):
@@ -44,14 +48,14 @@ def setup_logging(implementation):
     # Console Handler - for real-time output
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter("%(asctime)s - [%(levelname)8s] - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    console_formatter = logging.Formatter("[%(asctime)s][%(levelname).4s] %(message)s", datefmt="%H:%M:%S")
     console_handler.setFormatter(console_formatter)
 
     # File Handler - for detailed logging
     file_handler = logging.FileHandler(log_filename)
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
-        "%(asctime)s - [%(levelname)8s] - [%(filename)s:%(lineno)d] - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "[%(asctime)s][%(levelname).4s][%(filename)s:%(lineno)d] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     file_handler.setFormatter(file_formatter)
 
@@ -83,12 +87,8 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
     times = []
     memory_usages = []
 
-    for run in range(num_runs):
-        logging.info(f"Starting run {run + 1}/{num_runs}")
-
-        if verbose:
-            logging.debug(f"Run {run + 1}/{num_runs}")
-
+    progress_bar = tqdm(range(num_runs), desc="Running tests", leave=False)
+    for run in progress_bar:
         try:
             # Time measurement
             start_time = timeit.default_timer()
@@ -96,8 +96,6 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
             end_time = timeit.default_timer()
             run_time = end_time - start_time
             times.append(run_time)
-
-            logging.info(f"Completed run {run + 1}/{num_runs}")
 
             if verbose:
                 logging.debug(f"Run time: {run_time:.4f} seconds")
@@ -115,7 +113,6 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
             import traceback
 
             traceback.print_exc()
-            # If a run fails, we'll skip it but continue with the benchmark
             continue
 
     # Compute statistics
@@ -128,9 +125,11 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
     avg_memory = statistics.mean(memory_usages)
     std_memory = statistics.stdev(memory_usages) if len(memory_usages) > 1 else 0
 
+    logging.info(f"{SUBDIV}")
     logging.info("Performance Summary:")
     logging.info(f"  Average Time: {avg_time:.4f} ± {std_time:.4f} seconds")
     logging.info(f"  Average Memory: {avg_memory:.4f} ± {std_memory:.4f} MiB")
+    logging.info(f"{SUBDIV}")
 
     return avg_time, std_time, avg_memory, std_memory
 
@@ -139,12 +138,14 @@ def run_benchmarks(
     implementation="cpython", num_runs=30, cpu_limit=10000, memory_size=1000, mixed_size=1000, verbose=False
 ):
     """Run performance benchmarks for all test cases."""
-    logging.info(f"Running benchmarks with {implementation} implementation...")
+    logging.info(f"\n{DIVIDER}")
+    logging.info(f"Starting benchmarks for {implementation.upper()}")
+    logging.info(f"{DIVIDER}")
     logging.info(f"Using executable: {sys.executable}")
     logging.info(f"Number of runs: {num_runs}")
     logging.info(f"CPU test limit: {cpu_limit}")
     logging.info(f"Memory test size: {memory_size}")
-    logging.info(f"Mixed test size: {mixed_size}")
+    logging.info(f"Mixed test size: {mixed_size}\n")
 
     # Determine which test modules to use based on implementation
     if implementation == "cpython" or implementation == "pypy":
@@ -171,7 +172,9 @@ def run_benchmarks(
     # Run benchmarks
     for test_func, test_name, test_args in test_modules:
         try:
+            logging.info(f"\n{SUBDIV}")
             logging.info(f"Running {test_name}")
+            logging.info(f"{SUBDIV}")
             avg_time, std_time, avg_memory, std_memory = measure_performance(
                 test_func, *test_args, num_runs=num_runs, verbose=verbose
             )
@@ -188,6 +191,10 @@ def run_benchmarks(
             import traceback
 
             traceback.print_exc()
+
+    logging.info(f"{DIVIDER}")
+    logging.info(f"Completed benchmarks for {implementation}")
+    logging.info(f"{DIVIDER}")
 
 
 def main():
