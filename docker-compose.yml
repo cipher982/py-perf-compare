@@ -1,57 +1,35 @@
 services:
-  benchmark-controller:  # neutral controller that orchestrates benchmarks
-    build: 
+  base:
+    build:
       context: .
-      dockerfile: Dockerfile.cpython
-    volumes:
-      - .:/app
-      - ./results:/results
-    environment:
-      - PYTHONPATH=/app
-      - PYTHONDONTWRITEBYTECODE=1
-    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
+      dockerfile: docker/Dockerfile.base
+    image: py-perf-compare-base
 
-  cpython:  # specific CPython runtime
-    build: 
+  cpython:
+    build:
       context: .
-      dockerfile: Dockerfile.cpython
+      dockerfile: docker/Dockerfile.cpython
     volumes:
-      - .:/app
       - ./results:/results
-    environment:
-      - PYTHONPATH=/app
-      - PYTHONDONTWRITEBYTECODE=1
-    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["cpython"]
     depends_on:
-      - benchmark-controller
+      - base
 
-  cython:  # specific Cython runtime
-    build: 
+  pypy:
+    build:
       context: .
-      dockerfile: Dockerfile.cpython
+      dockerfile: docker/Dockerfile.pypy
     volumes:
-      - .:/app
       - ./results:/results
-    environment:
-      - PYTHONPATH=/app
-      - PYTHONDONTWRITEBYTECODE=1
-    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["cython"]
     depends_on:
-      - benchmark-controller
+      - base
 
-  pypy:  # specific PyPy runtime
-    build: 
+  benchmark-controller:
+    build:
       context: .
-      dockerfile: Dockerfile.pypy
+      dockerfile: docker/Dockerfile.cpython
     volumes:
-      - .:/app
       - ./results:/results
-    environment:
-      - PYTHONPATH=/app
-      - PYTHONDONTWRITEBYTECODE=1
-    entrypoint: ["/bin/bash", "/app/docker-entrypoint.sh"]
-    command: ["pypy"]
     depends_on:
-      - benchmark-controller
+      - cpython
+      - pypy
+    command: ["all", "--runs", "3", "--cpu-limit", "1000000", "--memory-size", "200", "--mixed-size", "500"]

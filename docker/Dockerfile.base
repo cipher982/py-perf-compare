@@ -1,0 +1,30 @@
+# Base image for all Python implementations
+FROM python:3.11-slim AS base
+
+# Install common build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Create virtual environment
+RUN python -m venv /venv
+
+# Install common dependencies
+RUN . /venv/bin/activate && \
+    pip install --upgrade pip wheel setuptools && \
+    pip install memory-profiler tqdm matplotlib seaborn pandas
+
+# Set up environment variables
+ENV PATH="/venv/bin:$PATH" \
+    PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh 

@@ -1,7 +1,9 @@
 import random
 
+import numpy as np
 
-def matrix_multiply(A, B):
+
+def matrix_multiply_pure(A, B):
     """Perform matrix multiplication without NumPy."""
     rows_A, cols_A = len(A), len(A[0])
     rows_B, cols_B = len(B), len(B[0])
@@ -21,16 +23,38 @@ def matrix_multiply(A, B):
     return result
 
 
-def generate_matrix(rows, cols):
-    """Generate a random matrix."""
+def matrix_multiply_numpy(A, B):
+    """Perform matrix multiplication using NumPy."""
+    return np.dot(A, B)
+
+
+def generate_matrix_pure(rows, cols):
+    """Generate a random matrix without NumPy."""
     return [[random.uniform(0, 1) for _ in range(cols)] for _ in range(rows)]
 
 
-def run_memory_test(matrix_size=500):
-    """Run memory-bound test with matrix multiplication."""
-    A = generate_matrix(matrix_size, matrix_size)
-    B = generate_matrix(matrix_size, matrix_size)
-    return matrix_multiply(A, B)
+def generate_matrix_numpy(rows, cols):
+    """Generate a random matrix using NumPy."""
+    return np.random.rand(rows, cols)
+
+
+def run_memory_test_pure(matrix_size=500):
+    """Run memory-bound test with pure Python matrix multiplication."""
+    A = generate_matrix_pure(matrix_size, matrix_size)
+    B = generate_matrix_pure(matrix_size, matrix_size)
+    return matrix_multiply_pure(A, B)
+
+
+def run_memory_test_numpy(matrix_size=500):
+    """Run memory-bound test with NumPy matrix multiplication."""
+    A = generate_matrix_numpy(matrix_size, matrix_size)
+    B = generate_matrix_numpy(matrix_size, matrix_size)
+    return matrix_multiply_numpy(A, B)
+
+
+def run_memory_test(matrix_size=500, use_numpy=False):
+    """Run memory-bound test with configurable backend."""
+    return run_memory_test_numpy(matrix_size) if use_numpy else run_memory_test_pure(matrix_size)
 
 
 if __name__ == "__main__":

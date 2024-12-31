@@ -1,33 +1,35 @@
-# CPython benchmark environment
-FROM python:3.11-slim
-WORKDIR /app
+# Use PyPy base image
+FROM pypy:3.9-slim
 
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
     g++ \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN python -m venv /venv
+# Create app directory
+WORKDIR /app
 
-# Install core dependencies
+# Create virtual environment
+RUN pypy -m venv /venv
+
+# Install only the required dependencies
 RUN . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
-    pip install numpy cython memory-profiler tqdm
-
-# Copy source files
-COPY setup.py .
-COPY src/ src/
-COPY benchmarks/ benchmarks/
+    pip install "numpy<1.25.0" memory-profiler psutil tqdm
 
 # Set up environment variables
 ENV PATH="/venv/bin:$PATH" \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1
 
-# Set up entrypoint
+# Copy entrypoint script first
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENTRYPOINT ["docker-entrypoint.sh", "cpython"]
+# Copy source code
+COPY . .
+
+ENTRYPOINT ["docker-entrypoint.sh", "pypy"] 
