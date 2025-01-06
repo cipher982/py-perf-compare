@@ -1,0 +1,28 @@
+# Use our custom base image
+FROM py-perf-compare-base
+
+# Install CPython-specific dependencies
+RUN . /venv/bin/activate && \
+    pip install numpy cython
+
+# Create source directories
+RUN mkdir -p /app/src/pure /app/src/numpy
+
+# Copy package files first
+COPY setup.py pyproject.toml ./
+COPY src/__init__.py src/
+COPY src/pure/__init__.py src/pure/
+COPY src/numpy/__init__.py src/numpy/
+
+# Copy implementation files
+COPY src/pure/*_test_*.py* src/pure/
+COPY src/numpy/*_test_*.py* src/numpy/
+
+# Copy benchmark files
+COPY benchmarks benchmarks/
+
+# Build Cython extensions
+RUN . /venv/bin/activate && \
+    python setup.py build_ext --inplace
+
+ENTRYPOINT ["docker-entrypoint.sh", "cpython"] 

@@ -20,20 +20,9 @@ def process_results_directory(results_dir="/results"):
 
         # Process each CSV file in the implementation directory
         for csv_file in glob.glob(os.path.join(impl_dir, "*_results.csv")):
-            test_name = os.path.basename(csv_file).replace("_results.csv", "")
-
             # Read the CSV file
             df = pd.read_csv(csv_file)
-            rows.append(
-                {
-                    "test_type": test_name.replace("_test", "").upper(),
-                    "implementation": impl,
-                    "mean_time": df.loc[df["Metric"] == "Time (seconds)", "Value"].iloc[0],
-                    "std_time": df.loc[df["Metric"] == "Time (seconds)", "Std Dev"].iloc[0],
-                    "mean_memory": df.loc[df["Metric"] == "Memory (MiB)", "Value"].iloc[0],
-                    "std_memory": df.loc[df["Metric"] == "Memory (MiB)", "Std Dev"].iloc[0],
-                }
-            )
+            rows.extend(df.to_dict("records"))
 
     # Create DataFrame from all results
     df = pd.DataFrame(rows)
@@ -47,78 +36,58 @@ def process_results_directory(results_dir="/results"):
 
 
 def plot_results(combined_csv):
-    """Generate performance visualization from combined results."""
+    """Create detailed performance comparison plots."""
     df = pd.read_csv(combined_csv)
-    df["implementation"] = df["implementation"].str.upper()
 
-    # Create single figure with two columns: Time and Memory
-    fig, (ax_time, ax_mem) = plt.subplots(1, 2, figsize=(15, 8))
+    # Create figure with subplots for time and memory
+    fig, (ax_time, ax_mem) = plt.subplots(2, 1, figsize=(12, 16))
+
+    # Color palette for different implementations
+    colors = sns.color_palette("husl", n_colors=3)
 
     # Plot execution times
+    time_data = df[df["Metric"] == "Time (seconds)"]
     sns.barplot(
-        data=df,
-        x="test_type",
-        y="mean_time",
-        hue="implementation",
+        data=time_data,
+        x="Test Type",
+        y="Value",
+        hue="Implementation",
         ax=ax_time,
-        palette="Set2",
-        capsize=0.05,
-        err_kws={"linewidth": 2},
+        palette=colors,
     )
 
     # Format time axis and labels
-    ax_time.set_yscale("log")  # Use log scale for better visibility of small differences
     ax_time.set_title("Execution Time by Test", pad=20, fontsize=12, fontweight="bold")
     ax_time.set_xlabel("Test Type", fontsize=10)
     ax_time.set_ylabel("Time (seconds)", fontsize=10)
 
     # Add value labels on bars for time
     for container in ax_time.containers:
-        for bar in container:
-            height = bar.get_height()
-            if height < 0.001:
-                label = f"{height:.2e}"
-            else:
-                label = f"{height:.3f}"
-            ax_time.text(
-                bar.get_x() + bar.get_width() / 2, height, label, ha="center", va="bottom", fontsize=8, rotation=45
-            )
+        ax_time.bar_label(container, fmt="%.3f", padding=3, rotation=45)
 
     # Plot memory usage
+    memory_data = df[df["Metric"] == "Memory (MiB)"]
     sns.barplot(
-        data=df,
-        x="test_type",
-        y="mean_memory",
-        hue="implementation",
+        data=memory_data,
+        x="Test Type",
+        y="Value",
+        hue="Implementation",
         ax=ax_mem,
-        palette="Set2",
-        capsize=0.05,
-        err_kws={"linewidth": 2},
+        palette=colors,
     )
 
     # Format memory axis and labels
     ax_mem.set_title("Memory Usage by Test", pad=20, fontsize=12, fontweight="bold")
     ax_mem.set_xlabel("Test Type", fontsize=10)
-    ax_mem.set_ylabel("Memory (MB)", fontsize=10)
+    ax_mem.set_ylabel("Memory (MiB)", fontsize=10)
 
     # Add value labels on bars for memory
     for container in ax_mem.containers:
-        for bar in container:
-            height = bar.get_height()
-            ax_mem.text(
-                bar.get_x() + bar.get_width() / 2,
-                height,
-                f"{height:.1f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-                rotation=45,
-            )
+        ax_mem.bar_label(container, fmt="%.1f", padding=3, rotation=45)
 
     # Adjust layout and labels
     for ax in [ax_time, ax_mem]:
         ax.grid(True, alpha=0.3, linestyle="--")
-        # Move legend to top
         ax.legend(
             title="Implementation",
             bbox_to_anchor=(0.5, 1.15),
@@ -126,39 +95,36 @@ def plot_results(combined_csv):
             ncol=3,
             fontsize=9,
         )
-        # Rotate x-axis labels for better readability
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     # Add overall title
     fig.suptitle(
-        "Performance Comparison: CPython vs Cython vs PyPy",
-        y=1.1,
+        "Performance Comparison: Pure vs NumPy Implementations",
+        y=1.05,
         fontsize=14,
         fontweight="bold",
     )
 
-    # Adjust layout to prevent overlapping
-    plt.tight_layout()
-
-    # Save plot
-    plot_dir = os.path.dirname(combined_csv)
+    # Save plots
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plot_path = os.path.join(plot_dir, f"performance_comparison_{timestamp}.png")
-    fig.savefig(plot_path, dpi=300, bbox_inches="tight")
+    plot_file = os.path.join(os.path.dirname(combined_csv), f"performance_comparison_{timestamp}.png")
+    plt.savefig(plot_file, bbox_inches="tight", dpi=300)
     plt.close()
 
-    return plot_path
+
+def main():
+    """Process results and generate plots."""
+    import sys
+
+    if len(sys.argv) > 1:
+        results_dir = sys.argv[1]
+    else:
+        results_dir = "/results"
+
+    combined_csv = process_results_directory(results_dir)
+    plot_results(combined_csv)
+    print("Results processed and plots generated in results/")
 
 
 if __name__ == "__main__":
-    import sys
-
-    # Use provided results directory or default to /results
-    results_dir = sys.argv[1] if len(sys.argv) > 1 else "/results"
-
-    if os.path.exists(results_dir):
-        combined_csv = process_results_directory(results_dir)
-        plot_results(combined_csv)
-        print(f"Results processed and plots generated in {results_dir}")
-    else:
-        print(f"Results directory not found: {results_dir}")
+    main()
