@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 
 # Conditional imports based on implementation
-def get_imports(implementation):
+def get_imports(implementation: str):
     if implementation == "cpython":
         from src.numpy.cpu_test_cython import run_cpu_test as numpy_cython_cpu_test
         from src.numpy.memory_test_cython import run_memory_test as numpy_cython_memory_test
@@ -55,7 +55,7 @@ DIVIDER = "=" * 50
 SUBDIV = "-" * 20
 
 
-def setup_logging(implementation):
+def setup_logging(implementation: str):
     """
     Set up comprehensive logging with multiple handlers and detailed formatting.
 
@@ -110,7 +110,7 @@ def setup_logging(implementation):
     return log_filename
 
 
-def measure_performance(func, *args, num_runs=30, verbose=False):
+def measure_performance(func, *args, num_runs: int = 30, verbose: bool = False):
     """Measure performance metrics for a given function."""
     logging.info(f"Starting performance measurement for {func.__module__}.{func.__name__}")
     logging.info(f"Arguments: {args}")
@@ -165,66 +165,70 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
     return avg_time, std_time, avg_memory, std_memory
 
 
-def run_benchmarks(implementation, num_runs, cpu_limit, memory_size, mixed_size, verbose=False):
+def run_benchmarks(
+    implementation: str,
+    num_runs: int,
+    prime_upper_bound: int,
+    matrix_dimension: int,
+    fibonacci_length: int,
+    verbose: bool = False,
+):
     """
     Run performance benchmarks for specified implementation.
 
     Args:
         implementation (str): Target implementation (cpython, pypy, cython)
         num_runs (int): Number of times to run each test
-        cpu_limit (int): Limit for CPU-bound tests
-        memory_size (int): Size for memory-bound tests
-        mixed_size (int): Size for mixed tests
+        prime_upper_bound (int): Upper bound for prime number calculations
+        matrix_dimension (int): Size of NxN matrices for multiplication
+        fibonacci_length (int): Number of Fibonacci numbers to calculate
         verbose (bool): Enable verbose logging
     """
+    logging.info(f"\n{DIVIDER}\nRunning {implementation} benchmarks\n{DIVIDER}")
     logging.info(f"Number of runs: {num_runs}")
-    logging.info(f"CPU test limit: {cpu_limit}")
-    logging.info(f"Memory test size: {memory_size}")
-    logging.info(f"Mixed test size: {mixed_size}\n")
+    logging.info(f"Prime number upper bound: {prime_upper_bound}")
+    logging.info(f"Matrix dimension: {matrix_dimension}")
+    logging.info(f"Fibonacci sequence length: {fibonacci_length}\n")
 
     imports = get_imports(implementation)
 
     # Determine which test modules to use based on implementation
     if implementation == "cpython":
-        test_modules = [
-            (imports["pure_python_cpu_test"], "CPU Test (Pure Python)", (cpu_limit,)),
-            (imports["numpy_python_cpu_test"], "CPU Test (NumPy Python)", (cpu_limit,)),
-            (imports["pure_python_memory_test"], "Memory Test (Pure Python)", (memory_size,)),
-            (imports["numpy_python_memory_test"], "Memory Test (NumPy Python)", (memory_size,)),
-            (imports["pure_python_mixed_test"], "Mixed Test (Pure Python)", (mixed_size,)),
-            (imports["pure_cython_cpu_test"], "CPU Test (Pure Cython)", (cpu_limit,)),
-            (imports["numpy_cython_cpu_test"], "CPU Test (NumPy Cython)", (cpu_limit,)),
-            (imports["pure_cython_memory_test"], "Memory Test (Pure Cython)", (memory_size,)),
-            (imports["numpy_cython_memory_test"], "Memory Test (NumPy Cython)", (memory_size,)),
-            (imports["pure_cython_mixed_test"], "Mixed Test (Pure Cython)", (mixed_size,)),
+        test_cases = [
+            (imports["pure_python_cpu_test"], "CPU Test (Pure Python)", (prime_upper_bound,)),
+            (imports["numpy_python_cpu_test"], "CPU Test (NumPy Python)", (prime_upper_bound,)),
+            (imports["pure_python_memory_test"], "Memory Test (Pure Python)", (matrix_dimension,)),
+            (imports["numpy_python_memory_test"], "Memory Test (NumPy Python)", (matrix_dimension,)),
+            (imports["pure_python_mixed_test"], "Mixed Test (Pure Python)", (fibonacci_length,)),
+            (imports["pure_cython_cpu_test"], "CPU Test (Pure Cython)", (prime_upper_bound,)),
+            (imports["numpy_cython_cpu_test"], "CPU Test (NumPy Cython)", (prime_upper_bound,)),
+            (imports["pure_cython_memory_test"], "Memory Test (Pure Cython)", (matrix_dimension,)),
+            (imports["numpy_cython_memory_test"], "Memory Test (NumPy Cython)", (matrix_dimension,)),
+            (imports["pure_cython_mixed_test"], "Mixed Test (Pure Cython)", (fibonacci_length,)),
         ]
     elif implementation == "cython":
-        test_modules = [
-            (imports["pure_python_cpu_test"], "CPU Test (Pure Python)", (cpu_limit,)),
-            (imports["numpy_python_cpu_test"], "CPU Test (NumPy Python)", (cpu_limit,)),
-            (imports["pure_python_memory_test"], "Memory Test (Pure Python)", (memory_size,)),
-            (imports["numpy_python_memory_test"], "Memory Test (NumPy Python)", (memory_size,)),
-            (imports["pure_python_mixed_test"], "Mixed Test (Pure Python)", (mixed_size,)),
-            (imports["pure_cython_cpu_test"], "CPU Test (Pure Cython)", (cpu_limit,)),
-            (imports["numpy_cython_cpu_test"], "CPU Test (NumPy Cython)", (cpu_limit,)),
-            (imports["pure_cython_memory_test"], "Memory Test (Pure Cython)", (memory_size,)),
-            (imports["numpy_cython_memory_test"], "Memory Test (NumPy Cython)", (memory_size,)),
-            (imports["pure_cython_mixed_test"], "Mixed Test (Pure Cython)", (mixed_size,)),
+        test_cases = [
+            (imports["pure_python_cpu_test"], "CPU Test (Pure Python)", (prime_upper_bound,)),
+            (imports["numpy_python_cpu_test"], "CPU Test (NumPy Python)", (prime_upper_bound,)),
+            (imports["pure_python_memory_test"], "Memory Test (Pure Python)", (matrix_dimension,)),
+            (imports["numpy_python_memory_test"], "Memory Test (NumPy Python)", (matrix_dimension,)),
+            (imports["pure_python_mixed_test"], "Mixed Test (Pure Python)", (fibonacci_length,)),
+            (imports["pure_cython_cpu_test"], "CPU Test (Pure Cython)", (prime_upper_bound,)),
+            (imports["numpy_cython_cpu_test"], "CPU Test (NumPy Cython)", (prime_upper_bound,)),
+            (imports["pure_cython_memory_test"], "Memory Test (Pure Cython)", (matrix_dimension,)),
+            (imports["numpy_cython_memory_test"], "Memory Test (NumPy Cython)", (matrix_dimension,)),
+            (imports["pure_cython_mixed_test"], "Mixed Test (Pure Cython)", (fibonacci_length,)),
         ]
-    elif implementation == "pypy":
-        test_modules = [
-            (imports["pure_python_cpu_test"], "CPU Test (Pure PyPy)", (cpu_limit,)),
-            (imports["numpy_python_cpu_test"], "CPU Test (NumPy PyPy)", (cpu_limit,)),
-            (imports["pure_python_memory_test"], "Memory Test (Pure PyPy)", (memory_size,)),
-            (imports["numpy_python_memory_test"], "Memory Test (NumPy PyPy)", (memory_size,)),
-            (imports["pure_python_mixed_test"], "Mixed Test (Pure PyPy)", (mixed_size,)),
+    else:  # pypy
+        test_cases = [
+            (imports["pure_python_cpu_test"], "CPU Test (Pure PyPy)", (prime_upper_bound,)),
+            (imports["numpy_python_cpu_test"], "CPU Test (NumPy PyPy)", (prime_upper_bound,)),
+            (imports["pure_python_memory_test"], "Memory Test (Pure PyPy)", (matrix_dimension,)),
+            (imports["numpy_python_memory_test"], "Memory Test (NumPy PyPy)", (matrix_dimension,)),
+            (imports["pure_python_mixed_test"], "Mixed Test (Pure PyPy)", (fibonacci_length,)),
         ]
-    else:
-        logging.error(f"Invalid implementation: {implementation}")
-        return
-
     # Run benchmarks
-    for test_func, test_name, test_args in test_modules:
+    for test_func, test_name, test_args in test_cases:
         if test_func is None:
             logging.warning(f"Skipping {test_name} - Not available for this implementation")
             continue
@@ -258,9 +262,11 @@ def main():
         help="Implementation(s) to benchmark. Use 'all' for all implementations or specify one or more.",
     )
     parser.add_argument("--runs", type=int, required=True, help="Number of runs for each benchmark")
-    parser.add_argument("--cpu-limit", type=int, required=True, help="Limit for CPU benchmark")
-    parser.add_argument("--memory-size", type=int, required=True, help="Size for memory benchmark")
-    parser.add_argument("--mixed-size", type=int, required=True, help="Size for mixed benchmark")
+    parser.add_argument(
+        "--prime-upper-bound", type=int, required=True, help="Upper bound for prime number calculations"
+    )
+    parser.add_argument("--matrix-dimension", type=int, required=True, help="Size of NxN matrices for multiplication")
+    parser.add_argument("--fibonacci-length", type=int, required=True, help="Number of Fibonacci numbers to calculate")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
@@ -280,9 +286,9 @@ def main():
         run_benchmarks(
             implementation=impl,
             num_runs=args.runs,
-            cpu_limit=args.cpu_limit,
-            memory_size=args.memory_size,
-            mixed_size=args.mixed_size,
+            prime_upper_bound=args.prime_upper_bound,
+            matrix_dimension=args.matrix_dimension,
+            fibonacci_length=args.fibonacci_length,
             verbose=args.verbose,
         )
 

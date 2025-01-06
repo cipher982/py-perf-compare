@@ -106,11 +106,24 @@ Tests both CPU and memory performance using Fibonacci sequence.
 ### Quick Start with Docker (Recommended)
 ```bash
 # Run all benchmarks with default parameters
-docker compose run benchmark-controller all --runs 3 --cpu-limit 1000000 --memory-size 200 --mixed-size 500
+docker compose run benchmark-controller all \
+    --runs 3 \                     # Number of test iterations
+    --prime-upper-bound 1000000 \  # Upper limit for prime number calculations
+    --matrix-dimension 200 \       # Size of matrices (NxN) for multiplication
+    --fibonacci-length 500         # Number of Fibonacci numbers to calculate
 
 # Or run specific implementation
-docker compose run benchmark-controller cpython --runs 3 --cpu-limit 1000000 --memory-size 200 --mixed-size 500
-docker compose run benchmark-controller pypy --runs 3 --cpu-limit 1000000 --memory-size 200 --mixed-size 500
+docker compose run benchmark-controller cpython \
+    --runs 3 \
+    --prime-upper-bound 1000000 \
+    --matrix-dimension 200 \
+    --fibonacci-length 500
+
+docker compose run benchmark-controller pypy \
+    --runs 3 \
+    --prime-upper-bound 1000000 \
+    --matrix-dimension 200 \
+    --fibonacci-length 500
 ```
 
 The benchmarks will run across containers:
