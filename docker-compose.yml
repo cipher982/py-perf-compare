@@ -13,7 +13,7 @@ services:
       - ./results:/results
     depends_on:
       - base
-    command: ["cpython", "--runs", "3", "--cpu-limit", "1000000", "--memory-size", "200", "--mixed-size", "500"]
+    command: ["cpython", "--runs", "3", "--prime-upper-bound", "10000", "--matrix-dimension", "200", "--fibonacci-length", "30"]
 
   pypy:
     build:
@@ -22,8 +22,9 @@ services:
     volumes:
       - ./results:/results
     depends_on:
-      - base
-    command: ["pypy", "--runs", "3", "--cpu-limit", "1000000", "--memory-size", "200", "--mixed-size", "500"]
+      cpython:
+        condition: service_completed_successfully
+    command: ["pypy", "--runs", "3", "--prime-upper-bound", "10000", "--matrix-dimension", "200", "--fibonacci-length", "30"]
 
   benchmark-controller:
     build:
@@ -32,6 +33,6 @@ services:
     volumes:
       - ./results:/results
     depends_on:
-      - cpython
-      - pypy
-    command: ["all", "--runs", "3", "--cpu-limit", "1000000", "--memory-size", "200", "--mixed-size", "500"]
+      pypy:
+        condition: service_completed_successfully
+    command: ["all", "--runs", "3", "--prime-upper-bound", "10000", "--matrix-dimension", "200", "--fibonacci-length", "30"]

@@ -1,12 +1,9 @@
 import argparse
 import logging
-import logging.handlers
-import os
 import statistics
 import sys
 import timeit
 import traceback
-from datetime import datetime
 
 import memory_profiler
 from tqdm import tqdm
@@ -56,58 +53,16 @@ SUBDIV = "-" * 20
 
 
 def setup_logging(implementation: str):
-    """
-    Set up comprehensive logging with multiple handlers and detailed formatting.
-
-    Args:
-        implementation (str): The implementation being benchmarked (cpython, cython, pypy)
-    """
-    # Create results and logs directories if they don't exist
-    results_dir = "/results"
-    logs_dir = os.path.join(results_dir, "logs")
-    os.makedirs(results_dir, exist_ok=True)
-    os.makedirs(logs_dir, exist_ok=True)
-
-    # Create a unique log filename with timestamp and implementation
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = os.path.join(logs_dir, f"{implementation}_benchmark_{timestamp}.log")
-
-    # Configure logging
+    """Basic logging setup for benchmark output."""
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
-    # Console Handler - for real-time output
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter("[%(asctime)s][%(levelname).4s] %(message)s", datefmt="%H:%M:%S")
-    console_handler.setFormatter(console_formatter)
+    # Single console handler with simple formatting
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("[%(asctime)s][%(levelname).4s] %(message)s", datefmt="%H:%M:%S"))
 
-    # File Handler - for detailed logging
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter(
-        "[%(asctime)s][%(levelname).4s][%(filename)s:%(lineno)d] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
-    file_handler.setFormatter(file_formatter)
-
-    # Rotate File Handler - to manage log file sizes
-    rotate_handler = logging.handlers.RotatingFileHandler(
-        log_filename,
-        maxBytes=10 * 1024 * 1024,  # 10 MB
-        backupCount=5,
-    )
-    rotate_handler.setLevel(logging.DEBUG)
-    rotate_handler.setFormatter(file_formatter)
-
-    # Clear any existing handlers
     logger.handlers.clear()
-
-    # Add handlers
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-    logger.addHandler(rotate_handler)
-
-    return log_filename
+    logger.addHandler(handler)
 
 
 def measure_performance(func, *args, num_runs: int = 30, verbose: bool = False):
@@ -119,50 +74,38 @@ def measure_performance(func, *args, num_runs: int = 30, verbose: bool = False):
     memory_usages = []
 
     progress_bar = tqdm(range(num_runs), desc="Running tests", leave=False)
-    for run in progress_bar:
+    for _ in progress_bar:
         try:
             # Time measurement
             start_time = timeit.default_timer()
-            result = func(*args)
+            func(*args)
             end_time = timeit.default_timer()
             run_time = end_time - start_time
             times.append(run_time)
-
-            if verbose:
-                logging.debug(f"Run time: {run_time:.4f} seconds")
-                logging.debug(f"Result length/value: {len(result) if hasattr(result, '__len__') else type(result)}")
 
             # Memory measurement
             memory_usage = memory_profiler.memory_usage((func, args), max_iterations=1)
             memory_usages.append(memory_usage[0])
 
-            if verbose:
-                logging.debug(f"Memory usage: {memory_usage[0]:.4f} MiB")
-
         except Exception as e:
-            logging.error(f"Error in run {run + 1}/{num_runs}: {e}")
-            import traceback
-
+            logging.error(f"Error in run: {e}")
             traceback.print_exc()
             continue
 
-    # Compute statistics
     if not times:
         logging.error("No successful runs completed!")
-        return 0, 0, 0, 0
+        return
 
     avg_time = statistics.mean(times)
     std_time = statistics.stdev(times) if len(times) > 1 else 0
     avg_memory = statistics.mean(memory_usages)
     std_memory = statistics.stdev(memory_usages) if len(memory_usages) > 1 else 0
 
-    logging.info(f"{SUBDIV}")
+    logging.info("--------------------")
     logging.info("Performance Summary:")
     logging.info(f"  Average Time: {avg_time:.4f} ± {std_time:.4f} seconds")
     logging.info(f"  Average Memory: {avg_memory:.4f} ± {std_memory:.4f} MiB")
-    logging.info(f"{SUBDIV}")
-
-    return avg_time, std_time, avg_memory, std_memory
+    logging.info("--------------------\n")
 
 
 def run_benchmarks(
@@ -238,16 +181,7 @@ def run_benchmarks(
         logging.info("--------------------")
 
         try:
-            avg_time, std_time, avg_memory, std_memory = measure_performance(
-                test_func, *test_args, num_runs=num_runs, verbose=verbose
-            )
-
-            logging.info("--------------------")
-            logging.info("Performance Summary:")
-            logging.info(f"  Average Time: {avg_time:.4f} ± {std_time:.4f} seconds")
-            logging.info(f"  Average Memory: {avg_memory:.4f} ± {std_memory:.4f} MiB")
-            logging.info("--------------------\n")
-
+            measure_performance(test_func, *test_args, num_runs=num_runs, verbose=verbose)
         except Exception as e:
             logging.error(f"Error running {test_name}: {str(e)}")
             logging.error(f"Traceback: {traceback.format_exc()}")
