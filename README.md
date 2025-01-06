@@ -13,23 +13,27 @@ This project provides performance comparisons across three types of computationa
 ```
 .
 ├── benchmarks/
-│   └── performance_runner.py    # Performance measurement script
+│   ├── performance_runner.py    # Performance measurement script
+│   └── results_processor.py     # Results processing and visualization
 ├── src/
 │   ├── pure/                    # Pure Python implementations
-│   ├── numpy/                   # NumPy-optimized implementations
-│   ├── cpu_test.py             # Pure Python CPU-bound test
-│   ├── memory_test.py          # Pure Python memory-bound test
-│   ├── mixed_test.py           # Pure Python mixed test
-│   ├── cython_cpu_test.pyx     # Cython CPU-bound test
-│   ├── cython_memory_test.pyx  # Cython memory-bound test
-│   └── cython_mixed_test.pyx   # Cython mixed test
+│   │   ├── cpu_test_python.py   # Pure Python CPU-bound test
+│   │   ├── cpu_test_cython.pyx  # Cython CPU-bound test
+│   │   ├── memory_test_python.py # Pure Python memory-bound test
+│   │   ├── memory_test_cython.pyx # Cython memory-bound test
+│   │   ├── mixed_test_python.py  # Pure Python mixed test
+│   │   └── mixed_test_cython.pyx # Cython mixed test
+│   └── numpy/                   # NumPy-optimized implementations
+│       ├── cpu_test_numpy.py    # NumPy CPU-bound test
+│       ├── cpu_test_cython.pyx  # Cython+NumPy CPU-bound test
+│       ├── memory_test_python.py # NumPy memory-bound test
+│       └── memory_test_cython.pyx # Cython+NumPy memory-bound test
 ├── docker/
 │   ├── Dockerfile.base         # Base Docker configuration
 │   ├── Dockerfile.cpython      # CPython environment
 │   └── Dockerfile.pypy         # PyPy environment
 ├── results/                    # Benchmark results
 │   ├── cpython/                # CPython test results
-│   ├── cython/                 # Cython test results
 │   ├── pypy/                   # PyPy test results
 │   ├── logs/                   # Benchmark run logs
 │   └── performance_comparison.png  # Visualization of results
@@ -85,11 +89,10 @@ Evaluates memory handling through matrix operations.
 
 #### Mixed Test
 Tests both CPU and memory performance using Fibonacci sequence.
-- Implementation: Fibonacci with memoization
+- Implementation: Iterative Fibonacci calculation
 - Metrics: Combined CPU and memory performance
 - Variations:
   - Pure Python implementation
-  - NumPy-accelerated implementation
   - Cython-optimized implementation
   - PyPy-compatible implementation
 
@@ -102,13 +105,15 @@ Tests both CPU and memory performance using Fibonacci sequence.
 
 ### Quick Start with Docker (Recommended)
 ```bash
-# Build and run all benchmarks
-docker compose up --build
+# Run all benchmarks with default parameters
+docker compose run benchmark-controller all --runs 3 --cpu-limit 1000000 --memory-size 200 --mixed-size 500
 
-# View results in ./results directory
+# Or run specific implementation
+docker compose run benchmark-controller cpython --runs 3 --cpu-limit 1000000 --memory-size 200 --mixed-size 500
+docker compose run benchmark-controller pypy --runs 3 --cpu-limit 1000000 --memory-size 200 --mixed-size 500
 ```
 
-The benchmarks will run in parallel across containers:
+The benchmarks will run across containers:
 - `cpython`: Running CPython and Cython tests
 - `pypy`: Running PyPy tests
 
