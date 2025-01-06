@@ -2,27 +2,52 @@ import argparse
 import logging
 import logging.handlers
 import os
-import shutil
 import statistics
 import sys
 import timeit
+import traceback
 from datetime import datetime
 
 import memory_profiler
 from tqdm import tqdm
 
-from src.numpy.cpu_test_cython import run_cpu_test as numpy_cython_cpu_test
-from src.numpy.cpu_test_numpy import run_cpu_test as numpy_python_cpu_test
-from src.numpy.memory_test_cython import run_memory_test as numpy_cython_memory_test
-from src.numpy.memory_test_python import run_memory_test as numpy_python_memory_test
-from src.pure.cpu_test_cython import run_cpu_test as pure_cython_cpu_test
 
-# Import test implementations
-from src.pure.cpu_test_python import run_cpu_test as pure_python_cpu_test
-from src.pure.memory_test_cython import run_memory_test as pure_cython_memory_test
-from src.pure.memory_test_python import run_memory_test as pure_python_memory_test
-from src.pure.mixed_test_cython import run_mixed_test as pure_cython_mixed_test
-from src.pure.mixed_test_python import run_mixed_test as pure_python_mixed_test
+# Conditional imports based on implementation
+def get_imports(implementation):
+    if implementation == "cpython":
+        from src.numpy.cpu_test_cython import run_cpu_test as numpy_cython_cpu_test
+        from src.numpy.memory_test_cython import run_memory_test as numpy_cython_memory_test
+        from src.pure.cpu_test_cython import run_cpu_test as pure_cython_cpu_test
+        from src.pure.memory_test_cython import run_memory_test as pure_cython_memory_test
+        from src.pure.mixed_test_cython import run_mixed_test as pure_cython_mixed_test
+    else:
+        # Placeholder for no Cython tests
+        numpy_cython_cpu_test = None
+        numpy_cython_memory_test = None
+        pure_cython_cpu_test = None
+        pure_cython_memory_test = None
+        pure_cython_mixed_test = None
+
+    # Common imports
+    from src.numpy.cpu_test_numpy import run_cpu_test as numpy_python_cpu_test
+    from src.numpy.memory_test_python import run_memory_test as numpy_python_memory_test
+    from src.pure.cpu_test_python import run_cpu_test as pure_python_cpu_test
+    from src.pure.memory_test_python import run_memory_test as pure_python_memory_test
+    from src.pure.mixed_test_python import run_mixed_test as pure_python_mixed_test
+
+    return {
+        "numpy_cython_cpu_test": numpy_cython_cpu_test,
+        "numpy_cython_memory_test": numpy_cython_memory_test,
+        "pure_cython_cpu_test": pure_cython_cpu_test,
+        "pure_cython_memory_test": pure_cython_memory_test,
+        "pure_cython_mixed_test": pure_cython_mixed_test,
+        "numpy_python_cpu_test": numpy_python_cpu_test,
+        "numpy_python_memory_test": numpy_python_memory_test,
+        "pure_python_cpu_test": pure_python_cpu_test,
+        "pure_python_memory_test": pure_python_memory_test,
+        "pure_python_mixed_test": pure_python_mixed_test,
+    }
+
 
 sys.set_int_max_str_digits(0)
 
@@ -140,79 +165,88 @@ def measure_performance(func, *args, num_runs=30, verbose=False):
     return avg_time, std_time, avg_memory, std_memory
 
 
-def run_benchmarks(
-    implementation="cpython", num_runs=30, cpu_limit=10000, memory_size=1000, mixed_size=1000, verbose=False
-):
-    """Run performance benchmarks for all test cases."""
-    logging.info(f"\n{DIVIDER}")
-    logging.info(f"Starting benchmarks for {implementation.upper()}")
-    logging.info(f"{DIVIDER}")
-    logging.info(f"Using executable: {sys.executable}")
+def run_benchmarks(implementation, num_runs, cpu_limit, memory_size, mixed_size, verbose=False):
+    """
+    Run performance benchmarks for specified implementation.
+
+    Args:
+        implementation (str): Target implementation (cpython, pypy, cython)
+        num_runs (int): Number of times to run each test
+        cpu_limit (int): Limit for CPU-bound tests
+        memory_size (int): Size for memory-bound tests
+        mixed_size (int): Size for mixed tests
+        verbose (bool): Enable verbose logging
+    """
     logging.info(f"Number of runs: {num_runs}")
     logging.info(f"CPU test limit: {cpu_limit}")
     logging.info(f"Memory test size: {memory_size}")
     logging.info(f"Mixed test size: {mixed_size}\n")
 
+    imports = get_imports(implementation)
+
     # Determine which test modules to use based on implementation
     if implementation == "cpython":
         test_modules = [
-            (pure_python_cpu_test, "CPU Test (Pure Python)", (cpu_limit,)),
-            (numpy_python_cpu_test, "CPU Test (NumPy Python)", (cpu_limit,)),
-            (pure_python_memory_test, "Memory Test (Pure Python)", (memory_size,)),
-            (numpy_python_memory_test, "Memory Test (NumPy Python)", (memory_size,)),
-            (pure_python_mixed_test, "Mixed Test (Pure Python)", (mixed_size,)),
+            (imports["pure_python_cpu_test"], "CPU Test (Pure Python)", (cpu_limit,)),
+            (imports["numpy_python_cpu_test"], "CPU Test (NumPy Python)", (cpu_limit,)),
+            (imports["pure_python_memory_test"], "Memory Test (Pure Python)", (memory_size,)),
+            (imports["numpy_python_memory_test"], "Memory Test (NumPy Python)", (memory_size,)),
+            (imports["pure_python_mixed_test"], "Mixed Test (Pure Python)", (mixed_size,)),
+            (imports["pure_cython_cpu_test"], "CPU Test (Pure Cython)", (cpu_limit,)),
+            (imports["numpy_cython_cpu_test"], "CPU Test (NumPy Cython)", (cpu_limit,)),
+            (imports["pure_cython_memory_test"], "Memory Test (Pure Cython)", (memory_size,)),
+            (imports["numpy_cython_memory_test"], "Memory Test (NumPy Cython)", (memory_size,)),
+            (imports["pure_cython_mixed_test"], "Mixed Test (Pure Cython)", (mixed_size,)),
         ]
     elif implementation == "cython":
         test_modules = [
-            (pure_cython_cpu_test, "CPU Test (Pure Cython)", (cpu_limit,)),
-            (numpy_cython_cpu_test, "CPU Test (NumPy Cython)", (cpu_limit,)),
-            (pure_cython_memory_test, "Memory Test (Pure Cython)", (memory_size,)),
-            (numpy_cython_memory_test, "Memory Test (NumPy Cython)", (memory_size,)),
-            (pure_cython_mixed_test, "Mixed Test (Pure Cython)", (mixed_size,)),
+            (imports["pure_python_cpu_test"], "CPU Test (Pure Python)", (cpu_limit,)),
+            (imports["numpy_python_cpu_test"], "CPU Test (NumPy Python)", (cpu_limit,)),
+            (imports["pure_python_memory_test"], "Memory Test (Pure Python)", (memory_size,)),
+            (imports["numpy_python_memory_test"], "Memory Test (NumPy Python)", (memory_size,)),
+            (imports["pure_python_mixed_test"], "Mixed Test (Pure Python)", (mixed_size,)),
+            (imports["pure_cython_cpu_test"], "CPU Test (Pure Cython)", (cpu_limit,)),
+            (imports["numpy_cython_cpu_test"], "CPU Test (NumPy Cython)", (cpu_limit,)),
+            (imports["pure_cython_memory_test"], "Memory Test (Pure Cython)", (memory_size,)),
+            (imports["numpy_cython_memory_test"], "Memory Test (NumPy Cython)", (memory_size,)),
+            (imports["pure_cython_mixed_test"], "Mixed Test (Pure Cython)", (mixed_size,)),
         ]
     elif implementation == "pypy":
         test_modules = [
-            (pure_python_cpu_test, "CPU Test (Pure PyPy)", (cpu_limit,)),
-            (numpy_python_cpu_test, "CPU Test (NumPy PyPy)", (cpu_limit,)),
-            (pure_python_memory_test, "Memory Test (Pure PyPy)", (memory_size,)),
-            (numpy_python_memory_test, "Memory Test (NumPy PyPy)", (memory_size,)),
-            (pure_python_mixed_test, "Mixed Test (Pure PyPy)", (mixed_size,)),
+            (imports["pure_python_cpu_test"], "CPU Test (Pure PyPy)", (cpu_limit,)),
+            (imports["numpy_python_cpu_test"], "CPU Test (NumPy PyPy)", (cpu_limit,)),
+            (imports["pure_python_memory_test"], "Memory Test (Pure PyPy)", (memory_size,)),
+            (imports["numpy_python_memory_test"], "Memory Test (NumPy PyPy)", (memory_size,)),
+            (imports["pure_python_mixed_test"], "Mixed Test (Pure PyPy)", (mixed_size,)),
         ]
     else:
         logging.error(f"Invalid implementation: {implementation}")
         return
 
-    # Create results directory
-    results_dir = f"/results/{implementation}"
-    shutil.rmtree(results_dir, ignore_errors=True)
-    shutil.os.makedirs(results_dir, exist_ok=True)
-
     # Run benchmarks
     for test_func, test_name, test_args in test_modules:
+        if test_func is None:
+            logging.warning(f"Skipping {test_name} - Not available for this implementation")
+            continue
+
+        logging.info("\n--------------------")
+        logging.info(f"Running {test_name}")
+        logging.info("--------------------")
+
         try:
-            logging.info(f"\n{SUBDIV}")
-            logging.info(f"Running {test_name}")
-            logging.info(f"{SUBDIV}")
             avg_time, std_time, avg_memory, std_memory = measure_performance(
                 test_func, *test_args, num_runs=num_runs, verbose=verbose
             )
 
-            # Save results to CSV
-            results_file = f"{results_dir}/{test_name.lower().replace(' ', '_')}_results.csv"
-            with open(results_file, "w") as f:
-                f.write("Implementation,Test Type,Metric,Value,Std Dev\n")
-                f.write(f"{implementation},{test_name},Time (seconds),{avg_time},{std_time}\n")
-                f.write(f"{implementation},{test_name},Memory (MiB),{avg_memory},{std_memory}\n")
+            logging.info("--------------------")
+            logging.info("Performance Summary:")
+            logging.info(f"  Average Time: {avg_time:.4f} ± {std_time:.4f} seconds")
+            logging.info(f"  Average Memory: {avg_memory:.4f} ± {std_memory:.4f} MiB")
+            logging.info("--------------------\n")
 
         except Exception as e:
-            logging.error(f"Error running {test_name}: {e}")
-            import traceback
-
-            traceback.print_exc()
-
-    logging.info(f"{DIVIDER}")
-    logging.info(f"Completed benchmarks for {implementation}")
-    logging.info(f"{DIVIDER}")
+            logging.error(f"Error running {test_name}: {str(e)}")
+            logging.error(f"Traceback: {traceback.format_exc()}")
 
 
 def main():
@@ -223,10 +257,10 @@ def main():
         choices=["cpython", "cython", "pypy", "all"],
         help="Implementation(s) to benchmark. Use 'all' for all implementations or specify one or more.",
     )
-    parser.add_argument("--runs", type=int, default=30, help="Number of runs for each benchmark")
-    parser.add_argument("--cpu-limit", type=int, default=10000, help="Limit for CPU benchmark")
-    parser.add_argument("--memory-size", type=int, default=1000, help="Size for memory benchmark")
-    parser.add_argument("--mixed-size", type=int, default=1000, help="Size for mixed benchmark")
+    parser.add_argument("--runs", type=int, required=True, help="Number of runs for each benchmark")
+    parser.add_argument("--cpu-limit", type=int, required=True, help="Limit for CPU benchmark")
+    parser.add_argument("--memory-size", type=int, required=True, help="Size for memory benchmark")
+    parser.add_argument("--mixed-size", type=int, required=True, help="Size for mixed benchmark")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
