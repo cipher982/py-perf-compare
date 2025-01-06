@@ -1,0 +1,12 @@
+FROM py-perf-compare-base
+
+# Install visualization dependencies
+RUN pip install pandas matplotlib seaborn
+
+# Copy source code
+COPY . /app
+
+WORKDIR /app
+
+# Use the existing results processor
+ENTRYPOINT ["python", "-m", "benchmarks.results_processor"]

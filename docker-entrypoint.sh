@@ -11,7 +11,7 @@ log() {
 
 # Function to compile Cython files if needed
 compile_cython() {
-    if [ "$IMPLEMENTATION" = "cpython" ]; then
+    if [ "$IMPLEMENTATION" = "cython" ]; then
         log "INFO" "Compiling Cython files..."
         cd /app
         python setup.py build_ext --inplace
@@ -19,16 +19,12 @@ compile_cython() {
     fi
 }
 
-# Get the implementation name (first argument)
-IMPLEMENTATION=$1
-shift  # Remove first argument, leaving remaining args
-
 # Ensure results directory exists with proper permissions
-mkdir -p /results/{cpython,pypy}/pure /results/{cpython,pypy}/numpy
+mkdir -p /results/{cpython,cython,pypy}/{pure,numpy}
 chmod -R 777 /results
 
 # List of valid implementations
-VALID_IMPLEMENTATIONS=("cpython" "pypy" "all")
+VALID_IMPLEMENTATIONS=("cpython" "cython" "pypy" "all")
 
 # Check if the implementation is valid
 if [[ ! " ${VALID_IMPLEMENTATIONS[@]} " =~ " ${IMPLEMENTATION} " ]]; then
@@ -43,12 +39,15 @@ compile_cython
 START_TIME=$(date +%s)
 log "INFO" "Starting benchmark suite for implementation: $IMPLEMENTATION"
 
+# Build the common arguments string
+ARGS="--runs ${RUNS} --prime-upper-bound ${PRIME_UPPER_BOUND} --matrix-dimension ${MATRIX_DIMENSION} --fibonacci-length ${FIBONACCI_LENGTH}"
+
 case "$IMPLEMENTATION" in
     "all")
         log "INFO" "Running benchmarks for all implementations..."
-        for impl in "cpython" "pypy"; do
+        for impl in "cpython" "cython" "pypy"; do
             log "INFO" "Starting benchmarks for $impl"
-            python /app/benchmarks/performance_runner.py "$impl" "$@"
+            python /app/benchmarks/performance_runner.py "$impl" $ARGS
         done
         
         # Only process results in benchmark-controller
@@ -57,7 +56,7 @@ case "$IMPLEMENTATION" in
         ;;
     *)
         log "INFO" "Running benchmarks for $IMPLEMENTATION"
-        python /app/benchmarks/performance_runner.py "$IMPLEMENTATION" "$@"
+        python /app/benchmarks/performance_runner.py "$IMPLEMENTATION" $ARGS
         ;;
 esac
 

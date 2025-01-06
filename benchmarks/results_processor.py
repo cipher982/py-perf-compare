@@ -18,11 +18,24 @@ def process_results_directory(results_dir):
         if not os.path.exists(impl_dir):
             continue
 
-        # Process each CSV file in the implementation directory
-        for csv_file in glob.glob(os.path.join(impl_dir, "*_results.csv")):
-            # Read the CSV file
-            df = pd.read_csv(csv_file)
-            rows.extend(df.to_dict("records"))
+        # Process pure and numpy subdirectories
+        for subdir in ["pure", "numpy"]:
+            subdir_path = os.path.join(impl_dir, subdir)
+            if not os.path.exists(subdir_path):
+                continue
+
+            # Process each CSV file in the subdirectory
+            for csv_file in glob.glob(os.path.join(subdir_path, "*.csv")):
+                try:
+                    df = pd.read_csv(csv_file)
+                    if not df.empty:
+                        rows.extend(df.to_dict("records"))
+                except pd.errors.EmptyDataError:
+                    print(f"Warning: Empty CSV file found: {csv_file}")
+                    continue
+
+    if not rows:
+        raise ValueError("No valid data found in any CSV files")
 
     # Create DataFrame from all results
     df = pd.DataFrame(rows)
@@ -46,11 +59,10 @@ def plot_results(combined_csv):
     colors = sns.color_palette("husl", n_colors=3)
 
     # Plot execution times
-    time_data = df[df["Metric"] == "Time (seconds)"]
     sns.barplot(
-        data=time_data,
+        data=df,
         x="Test Type",
-        y="Value",
+        y="Time (seconds)",
         hue="Implementation",
         ax=ax_time,
         palette=colors,
@@ -66,11 +78,10 @@ def plot_results(combined_csv):
         ax_time.bar_label(container, fmt="%.3f", padding=3, rotation=45)
 
     # Plot memory usage
-    memory_data = df[df["Metric"] == "Memory (MiB)"]
     sns.barplot(
-        data=memory_data,
+        data=df,
         x="Test Type",
-        y="Value",
+        y="Memory (MiB)",
         hue="Implementation",
         ax=ax_mem,
         palette=colors,
@@ -121,9 +132,12 @@ def main():
     else:
         results_dir = "/results"
 
-    combined_csv = process_results_directory(results_dir)
-    plot_results(combined_csv)
-    print("Results processed and plots generated in results/")
+    try:
+        combined_csv = process_results_directory(results_dir)
+        plot_results(combined_csv)
+        print("Results processed and plots generated in results/")
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 if __name__ == "__main__":

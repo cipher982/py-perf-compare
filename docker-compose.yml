@@ -13,7 +13,30 @@ services:
       - ./results:/results
     depends_on:
       - base
-    command: ["cpython", "--runs", "3", "--prime-upper-bound", "10000", "--matrix-dimension", "200", "--fibonacci-length", "30"]
+    environment:
+      - IMPLEMENTATION=cpython
+      - RUNS=${RUNS}
+      - PRIME_UPPER_BOUND=${PRIME_UPPER_BOUND}
+      - MATRIX_DIMENSION=${MATRIX_DIMENSION}
+      - FIBONACCI_LENGTH=${FIBONACCI_LENGTH}
+    entrypoint: ["/app/docker-entrypoint.sh"]
+
+  cython:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cpython  # Reuse CPython container
+    volumes:
+      - ./results:/results
+    depends_on:
+      cpython:
+        condition: service_completed_successfully
+    environment:
+      - IMPLEMENTATION=cython
+      - RUNS=${RUNS}
+      - PRIME_UPPER_BOUND=${PRIME_UPPER_BOUND}
+      - MATRIX_DIMENSION=${MATRIX_DIMENSION}
+      - FIBONACCI_LENGTH=${FIBONACCI_LENGTH}
+    entrypoint: ["/app/docker-entrypoint.sh"]
 
   pypy:
     build:
@@ -22,17 +45,22 @@ services:
     volumes:
       - ./results:/results
     depends_on:
-      cpython:
+      cython:
         condition: service_completed_successfully
-    command: ["pypy", "--runs", "3", "--prime-upper-bound", "10000", "--matrix-dimension", "200", "--fibonacci-length", "30"]
+    environment:
+      - IMPLEMENTATION=pypy
+      - RUNS=${RUNS}
+      - PRIME_UPPER_BOUND=${PRIME_UPPER_BOUND}
+      - MATRIX_DIMENSION=${MATRIX_DIMENSION}
+      - FIBONACCI_LENGTH=${FIBONACCI_LENGTH}
+    entrypoint: ["/app/docker-entrypoint.sh"]
 
   benchmark-controller:
     build:
       context: .
-      dockerfile: docker/Dockerfile.cpython
+      dockerfile: docker/Dockerfile.controller
     volumes:
       - ./results:/results
     depends_on:
       pypy:
         condition: service_completed_successfully
-    command: ["all", "--runs", "3", "--prime-upper-bound", "10000", "--matrix-dimension", "200", "--fibonacci-length", "30"]

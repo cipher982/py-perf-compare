@@ -20,11 +20,12 @@ RUN . /venv/bin/activate && \
     pip install --upgrade pip wheel setuptools && \
     pip install memory-profiler tqdm matplotlib seaborn pandas
 
+# Copy entrypoint script and make it executable
+COPY docker-entrypoint.sh /app/
+RUN chmod 755 /app/docker-entrypoint.sh && \
+    chown root:root /app/docker-entrypoint.sh
+
 # Set up environment variables
 ENV PATH="/venv/bin:$PATH" \
     PYTHONPATH=/app \
     PYTHONUNBUFFERED=1
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh 
