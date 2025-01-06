@@ -49,8 +49,11 @@ case "$IMPLEMENTATION" in
         for impl in "cpython" "pypy"; do
             log "INFO" "Starting benchmarks for $impl"
             python /app/benchmarks/performance_runner.py "$impl" "$@"
-            log "INFO" "Completed benchmarks for $impl"
         done
+        
+        # Only process results in benchmark-controller
+        log "INFO" "Processing results..."
+        python /app/benchmarks/results_processor.py /results/
         ;;
     *)
         log "INFO" "Running benchmarks for $IMPLEMENTATION"
@@ -64,10 +67,6 @@ DURATION=$((END_TIME - START_TIME))
 
 log "INFO" "All benchmarks completed for $IMPLEMENTATION"
 log "INFO" "Total benchmark duration: $DURATION seconds"
-
-# Process results
-log "INFO" "Processing results..."
-python /app/benchmarks/results_processor.py /results/
 
 # Display results structure
 log "INFO" "Results saved in /results/"

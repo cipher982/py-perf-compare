@@ -11,7 +11,7 @@ def generate_matrix(rows, cols):
     return np.random.rand(rows, cols)
 
 
-def run_memory_test(matrix_size=500):
+def run_memory_test(matrix_size):
     """Run memory-bound test with NumPy matrix multiplication."""
     A = generate_matrix(matrix_size, matrix_size)
     B = generate_matrix(matrix_size, matrix_size)
@@ -19,5 +19,5 @@ def run_memory_test(matrix_size=500):
 
 
 if __name__ == "__main__":
-    result = run_memory_test()
+    result = run_memory_test(500)
     print(f"Matrix multiplication completed. Result matrix shape: {result.shape}")

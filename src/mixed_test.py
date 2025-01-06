@@ -13,12 +13,12 @@ def fibonacci_memoized(n, memo=None):
     return memo[n]
 
 
-def run_mixed_test(n=35):
+def run_mixed_test(n):
     """Run mixed test calculating Fibonacci sequence with memoization."""
     return [fibonacci_memoized(i) for i in range(n)]
 
 
 if __name__ == "__main__":
-    fib_sequence = run_mixed_test()
+    fib_sequence = run_mixed_test(35)
     print(f"Fibonacci sequence: {fib_sequence}")
     print(f"Length of sequence: {len(fib_sequence)}")

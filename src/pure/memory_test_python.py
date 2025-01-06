@@ -26,7 +26,7 @@ def generate_matrix(rows, cols):
     return [[random.uniform(0, 1) for _ in range(cols)] for _ in range(rows)]
 
 
-def run_memory_test(matrix_size=500):
+def run_memory_test(matrix_size):
     """Run memory-bound test with pure Python matrix multiplication."""
     A = generate_matrix(matrix_size, matrix_size)
     B = generate_matrix(matrix_size, matrix_size)
@@ -34,5 +34,5 @@ def run_memory_test(matrix_size=500):
 
 
 if __name__ == "__main__":
-    result = run_memory_test()
+    result = run_memory_test(500)
     print(f"Matrix multiplication completed. Result matrix size: {len(result)}x{len(result[0])}")

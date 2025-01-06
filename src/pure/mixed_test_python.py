@@ -28,12 +28,12 @@ def fibonacci_memoized(n: int, memo: Dict[int, int] = None) -> int:
     return memo[n]
 
 
-def run_mixed_test(n: int = 35) -> List[int]:
+def run_mixed_test(n: int) -> List[int]:
     """
-    Run mixed test calculating Fibonacci sequence with memoization.
+    Run mixed CPU and memory test.
 
     Args:
-        n: Length of the Fibonacci sequence to calculate (default: 35)
+        n: Size parameter for the test
 
     Returns:
         List[int]: List of Fibonacci numbers
@@ -42,6 +42,6 @@ def run_mixed_test(n: int = 35) -> List[int]:
 
 
 if __name__ == "__main__":
-    fib_sequence = run_mixed_test()
+    fib_sequence = run_mixed_test(35)
     print(f"Fibonacci sequence: {fib_sequence}")
     print(f"Length of sequence: {len(fib_sequence)}")

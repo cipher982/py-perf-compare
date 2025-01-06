@@ -44,12 +44,12 @@ def calculate_primes(limit: int) -> List[int]:
     return list(np.nonzero(sieve)[0])
 
 
-def run_cpu_test(limit: int = 10000) -> List[int]:
+def run_cpu_test(limit: int) -> List[int]:
     """
     Run CPU-bound test to calculate prime numbers using NumPy.
 
     Args:
-        limit: Upper bound for prime number calculation (default: 10000)
+        limit: Upper bound for prime number calculation
 
     Returns:
         List[int]: List of calculated prime numbers
@@ -58,5 +58,5 @@ def run_cpu_test(limit: int = 10000) -> List[int]:
 
 
 if __name__ == "__main__":
-    primes = run_cpu_test()
+    primes = run_cpu_test(10000)
     print(f"Found {len(primes)} prime numbers.")

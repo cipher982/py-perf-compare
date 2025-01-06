@@ -8,7 +8,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def process_results_directory(results_dir="/results"):
+def process_results_directory(results_dir):
     """Process all results from the directory structure and combine them."""
     implementations = ["cpython", "cython", "pypy"]
     rows = []

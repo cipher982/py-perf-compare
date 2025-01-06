@@ -13,6 +13,7 @@ services:
       - ./results:/results
     depends_on:
       - base
+    command: ["cpython", "--runs", "3", "--cpu-limit", "1000000", "--memory-size", "200", "--mixed-size", "500"]
 
   pypy:
     build:
@@ -22,6 +23,7 @@ services:
       - ./results:/results
     depends_on:
       - base
+    command: ["pypy", "--runs", "3", "--cpu-limit", "1000000", "--memory-size", "200", "--mixed-size", "500"]
 
   benchmark-controller:
     build:

@@ -38,25 +38,27 @@ def generate_matrix_numpy(rows, cols):
     return np.random.rand(rows, cols)
 
 
-def run_memory_test_pure(matrix_size=500):
-    """Run memory-bound test with pure Python matrix multiplication."""
+def run_memory_test_pure(matrix_size):
+    """Run memory test using pure Python implementation."""
     A = generate_matrix_pure(matrix_size, matrix_size)
     B = generate_matrix_pure(matrix_size, matrix_size)
     return matrix_multiply_pure(A, B)
 
 
-def run_memory_test_numpy(matrix_size=500):
-    """Run memory-bound test with NumPy matrix multiplication."""
+def run_memory_test_numpy(matrix_size):
+    """Run memory test using NumPy implementation."""
     A = generate_matrix_numpy(matrix_size, matrix_size)
     B = generate_matrix_numpy(matrix_size, matrix_size)
     return matrix_multiply_numpy(A, B)
 
 
-def run_memory_test(matrix_size=500, use_numpy=False):
-    """Run memory-bound test with configurable backend."""
-    return run_memory_test_numpy(matrix_size) if use_numpy else run_memory_test_pure(matrix_size)
+def run_memory_test(matrix_size, use_numpy):
+    """Run memory test with specified implementation."""
+    if use_numpy:
+        return run_memory_test_numpy(matrix_size)
+    return run_memory_test_pure(matrix_size)
 
 
 if __name__ == "__main__":
-    result = run_memory_test()
+    result = run_memory_test(500, False)
     print(f"Matrix multiplication completed. Result matrix size: {len(result)}x{len(result[0])}")

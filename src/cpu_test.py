@@ -19,11 +19,11 @@ def calculate_primes(limit):
     return [num for num in range(2, limit + 1) if is_prime(num)]
 
 
-def run_cpu_test(limit=10000):
+def run_cpu_test(limit):
     """Run CPU-bound test to calculate primes."""
     return calculate_primes(limit)
 
 
 if __name__ == "__main__":
-    primes = run_cpu_test()
+    primes = run_cpu_test(10000)
     print(f"Found {len(primes)} prime numbers.")
