@@ -4,24 +4,21 @@ from cpython.dict cimport PyDict_GetItem, PyDict_SetItem
 
 
 cdef long long fibonacci_memoized_cy(int n, dict memo) nogil except -1:
-    """Optimized Cython implementation of memoized Fibonacci."""
-    cdef long long result
-    cdef long long prev1, prev2
+    """Optimized Cython implementation using iterative approach."""
+    cdef long long a = 0
+    cdef long long b = 1
+    cdef int i
+    cdef long long temp
     
-    with gil:
-        if n in memo:
-            return memo[n]
+    if n <= 1:
+        return n
         
-        if n <= 1:
-            memo[n] = n
-            return n
-            
-        prev1 = fibonacci_memoized_cy(n - 1, memo)
-        prev2 = fibonacci_memoized_cy(n - 2, memo)
-        result = prev1 + prev2
-        memo[n] = result
+    for i in range(2, n + 1):
+        temp = b
+        b = a + b
+        a = temp
         
-    return result
+    return b
 
 
 def run_mixed_test(int n = 35) -> List[int]:

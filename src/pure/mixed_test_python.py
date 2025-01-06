@@ -6,26 +6,22 @@ from typing import List
 
 def fibonacci_memoized(n: int, memo: Dict[int, int] = None) -> int:
     """
-    Calculate Fibonacci number with memoization.
+    Calculate Fibonacci number iteratively with memoization.
 
     Args:
         n: The index of the Fibonacci number to calculate
-        memo: Memoization dictionary to store computed values
+        memo: Memoization dictionary to store computed values (not used in iterative version)
 
     Returns:
         int: The nth Fibonacci number
     """
-    if memo is None:
-        memo = {}
-
-    if n in memo:
-        return memo[n]
-
     if n <= 1:
         return n
 
-    memo[n] = fibonacci_memoized(n - 1, memo) + fibonacci_memoized(n - 2, memo)
-    return memo[n]
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
 
 
 def run_mixed_test(n: int) -> List[int]:
