@@ -19,6 +19,8 @@ services:
       - PRIME_UPPER_BOUND=${PRIME_UPPER_BOUND}
       - MATRIX_DIMENSION=${MATRIX_DIMENSION}
       - FIBONACCI_LENGTH=${FIBONACCI_LENGTH}
+      - PYTHONUNBUFFERED=1
+      - FORCE_COLOR=1
     entrypoint: ["/app/docker-entrypoint.sh"]
 
   cython:
@@ -36,6 +38,8 @@ services:
       - PRIME_UPPER_BOUND=${PRIME_UPPER_BOUND}
       - MATRIX_DIMENSION=${MATRIX_DIMENSION}
       - FIBONACCI_LENGTH=${FIBONACCI_LENGTH}
+      - PYTHONUNBUFFERED=1
+      - FORCE_COLOR=1
     entrypoint: ["/app/docker-entrypoint.sh"]
 
   pypy:
@@ -53,6 +57,8 @@ services:
       - PRIME_UPPER_BOUND=${PRIME_UPPER_BOUND}
       - MATRIX_DIMENSION=${MATRIX_DIMENSION}
       - FIBONACCI_LENGTH=${FIBONACCI_LENGTH}
+      - PYTHONUNBUFFERED=1
+      - FORCE_COLOR=1
     entrypoint: ["/app/docker-entrypoint.sh"]
 
   benchmark-controller:

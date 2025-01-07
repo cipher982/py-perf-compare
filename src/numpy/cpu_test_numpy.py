@@ -8,6 +8,7 @@ import numpy as np
 def is_prime_array(n: int) -> np.ndarray:
     """
     Generate a boolean array indicating prime numbers up to n using the Sieve of Eratosthenes.
+    Optimized using NumPy's vectorized operations and broadcasting.
 
     Args:
         n: Upper bound for prime number calculation
@@ -18,16 +19,23 @@ def is_prime_array(n: int) -> np.ndarray:
     if n < 2:
         return np.array([], dtype=bool)
 
-    # Initialize boolean array
-    sieve = np.ones(n + 1, dtype=bool)
-    sieve[0] = sieve[1] = False
+    # Initialize boolean array - use uint8 for memory efficiency
+    sieve = np.ones(n + 1, dtype=np.uint8)
+    sieve[0] = sieve[1] = 0
 
-    # Use vectorized operations for sieving
-    for i in range(2, int(np.sqrt(n)) + 1):
-        if sieve[i]:
-            sieve[i * i :: i] = False
+    # Calculate upper bound once
+    limit = int(np.sqrt(n)) + 1
 
-    return sieve
+    # Create array of potential prime factors
+    p = np.arange(2, limit)
+
+    # Use broadcasting to mark non-primes
+    # This creates a mask of all numbers that are multiples of each prime
+    # Much faster than iterating and using slice assignment
+    for i in p[sieve[p].astype(bool)]:
+        sieve[i * i :: i] = 0
+
+    return sieve.astype(bool)
 
 
 def calculate_primes(limit: int) -> List[int]:

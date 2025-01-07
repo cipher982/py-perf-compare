@@ -43,6 +43,7 @@ This project provides performance comparisons across three types of computationa
 ├── setup.py                   # Additional build and setup configurations
 ├── uv.lock                    # Dependency lock file
 ├── .pre-commit-config.yaml    # Pre-commit hooks configuration
+├── .env                       # Default benchmark parameters
 └── requirements-pypy.txt      # PyPy-specific dependencies
 ```
 
@@ -105,30 +106,20 @@ Tests both CPU and memory performance using Fibonacci sequence.
 
 ### Quick Start with Docker (Recommended)
 ```bash
-# Run all benchmarks with default parameters
-docker compose run benchmark-controller all \
-    --runs 3 \                     # Number of test iterations
-    --prime-upper-bound 1000000 \  # Upper limit for prime number calculations
-    --matrix-dimension 200 \       # Size of matrices (NxN) for multiplication
-    --fibonacci-length 500         # Number of Fibonacci numbers to calculate
+# Run all implementations
+IMPLEMENTATION=all RUNS=3 PRIME_UPPER_BOUND=1000000 MATRIX_DIMENSION=200 FIBONACCI_LENGTH=500 docker compose up
 
 # Or run specific implementation
-docker compose run benchmark-controller cpython \
-    --runs 3 \
-    --prime-upper-bound 1000000 \
-    --matrix-dimension 200 \
-    --fibonacci-length 500
-
-docker compose run benchmark-controller pypy \
-    --runs 3 \
-    --prime-upper-bound 1000000 \
-    --matrix-dimension 200 \
-    --fibonacci-length 500
+IMPLEMENTATION=cpython RUNS=3 PRIME_UPPER_BOUND=1000000 MATRIX_DIMENSION=200 FIBONACCI_LENGTH=500 docker compose up
 ```
 
-The benchmarks will run across containers:
-- `cpython`: Running CPython and Cython tests
-- `pypy`: Running PyPy tests
+### Configuration
+Default values for all parameters are provided in `.env`. You can override them using environment variables:
+- `IMPLEMENTATION`: Target implementation (all, cpython, cython, pypy)
+- `RUNS`: Number of test iterations
+- `PRIME_UPPER_BOUND`: Upper limit for prime number calculations
+- `MATRIX_DIMENSION`: Size of matrices (NxN) for multiplication
+- `FIBONACCI_LENGTH`: Number of Fibonacci numbers to calculate
 
 Results will be saved to:
 - `./results/cpython/` - CPython and Cython results

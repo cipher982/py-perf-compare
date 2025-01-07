@@ -75,8 +75,8 @@ def measure_performance(func, *args, num_runs: int = 30, verbose: bool = False):
     times = []
     memory_usages = []
 
-    progress_bar = tqdm(range(num_runs), desc="Running tests", leave=False)
-    for _ in progress_bar:
+    iterator = tqdm(range(num_runs), desc="Running tests", leave=False)
+    for _ in iterator:
         try:
             # Time measurement
             start_time = timeit.default_timer()
@@ -232,12 +232,10 @@ def run_benchmarks(
         logging.info("\n--------------------")
         logging.info(f"Running {test_name}")
         logging.info("--------------------")
-        logging.info(f"Starting performance measurement for {test_func.__module__}.{test_func.__name__}")
-        logging.info(f"Arguments: {test_args}")
 
         try:
             results = measure_performance(test_func, *test_args, num_runs=num_runs, verbose=verbose)
-            logging.info("--------------------")
+
             logging.info("Performance Summary:")
             logging.info(f"  Average Time: {results['avg_time']:.4f} ± {results['std_time']:.4f} seconds")
             logging.info(f"  Average Memory: {results['avg_memory']:.4f} ± {results['std_memory']:.4f} MiB")

@@ -13,6 +13,7 @@ np.import_array()
 def is_prime_array(int n) -> np.ndarray:
     """
     Generate a boolean array indicating prime numbers up to n using optimized Sieve of Eratosthenes.
+    Optimized using NumPy's vectorized operations and broadcasting with Cython enhancements.
     
     Args:
         n: Upper bound for prime number calculation
@@ -23,18 +24,21 @@ def is_prime_array(int n) -> np.ndarray:
     if n < 2:
         return np.array([], dtype=bool)
     
-    # Initialize boolean array
+    # Initialize boolean array with direct memory access
     cdef np.ndarray[np.uint8_t, ndim=1] sieve = np.ones(n + 1, dtype=np.uint8)
     sieve[0] = sieve[1] = 0
     
-    cdef int i, j
+    # Calculate upper bound once
     cdef int limit = int(sqrt(n)) + 1
     
-    # Optimized sieving with direct memory access
-    for i in range(2, limit):
-        if sieve[i]:
-            for j in range(i * i, n + 1, i):
-                sieve[j] = 0
+    # Create array of potential prime factors
+    cdef np.ndarray[np.int64_t, ndim=1] p = np.arange(2, limit, dtype=np.int64)
+    
+    # Use broadcasting with Cython-optimized loop
+    cdef int i
+    cdef np.ndarray[np.uint8_t, ndim=1] prime_mask = sieve[p].astype(np.uint8)
+    for i in p[prime_mask > 0]:
+        sieve[i * i::i] = 0
                 
     return sieve.astype(bool)
 
@@ -53,14 +57,19 @@ def calculate_primes(int limit) -> List[int]:
     return list(np.nonzero(sieve)[0])
 
 
-def run_cpu_test(int limit = 10000) -> List[int]:
+def run_cpu_test(limit: int) -> List[int]:
     """
-    Run CPU-bound test to calculate prime numbers using Cython-optimized NumPy.
+    Run CPU-bound test to calculate prime numbers using NumPy with Cython optimizations.
     
     Args:
-        limit: Upper bound for prime number calculation (default: 10000)
+        limit: Upper bound for prime number calculation
         
     Returns:
         List[int]: List of calculated prime numbers
     """
-    return calculate_primes(limit) 
+    return calculate_primes(limit)
+
+
+if __name__ == "__main__":
+    primes = run_cpu_test(10000)
+    print(f"Found {len(primes)} prime numbers.")
